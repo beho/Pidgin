@@ -1,9 +1,11 @@
+using Pidgin.TokenStreams;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
-using Pidgin.TokenStreams;
 
 namespace Pidgin
 {
@@ -115,8 +117,15 @@ namespace Pidgin
             //KeepAlive(ref input); 
             return result;
         }
-        //[MethodImpl(MethodImplOptions.NoInlining)]
-        //private static void KeepAlive<TToken>(ref ReadOnlySpan<TToken> span) { }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void KeepAlive<TToken>(ref ReadOnlySpan<TToken> span) { }
+
+        public static ValueTask<Result<char, T>> Parse<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
+        {
+            return DoParse(parser, new DecodingPipeTokenStream(reader, encoding.GetDecoder()), calculatePos ?? ByteDecodingPosCalculator);
+
+            unsafe SourcePos ByteDecodingPosCalculator(char c, SourcePos pos) => new SourcePos(1, pos.Col + encoding.GetByteCount(&c, 1));
+        }
 
         private static async ValueTask<Result<TToken, T>> DoParse<TToken, T>(Parser<TToken, T> parser, ITokenStream<TToken> stream, Func<TToken, SourcePos, SourcePos> calculatePos)
         {
@@ -236,6 +245,9 @@ namespace Pidgin
         /// <returns>The result of parsing</returns>
         public static async ValueTask<T> ParseOrThrow<TToken, T>(this Parser<TToken, T> parser, ReadOnlyMemory<TToken> input, Func<TToken, SourcePos, SourcePos>? calculatePos = null)
             => GetValueOrThrow(await parser.Parse(input, calculatePos));
+
+        public static async ValueTask<T> ParseOrThrow<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
+            => GetValueOrThrow(await parser.Parse(reader, encoding, calculatePos));
 
         private static T GetValueOrThrow<TToken, T>(Result<TToken, T> result)
             => result.Success ? result.Value : throw new ParseException(result.Error!.RenderErrorMessage());
