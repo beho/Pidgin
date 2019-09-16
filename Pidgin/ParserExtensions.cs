@@ -1,8 +1,10 @@
+using Pidgin.TokenStreams;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
-using Pidgin.TokenStreams;
+using System.Text;
 
 namespace Pidgin
 {
@@ -97,7 +99,7 @@ namespace Pidgin
         /// <returns>The result of parsing</returns>
         public static Result<TToken, T> Parse<TToken, T>(this Parser<TToken, T> parser, TToken[] input, Func<TToken, SourcePos, SourcePos>? calculatePos = null)
             => parser.Parse(input.AsSpan(), calculatePos);
-        
+
         /// <summary>
         /// Applies <paramref name="parser"/> to <paramref name="input"/>
         /// </summary>
@@ -112,7 +114,16 @@ namespace Pidgin
             return result;
         }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void KeepAlive<TToken>(ref ReadOnlySpan<TToken> span) {}
+        private static void KeepAlive<TToken>(ref ReadOnlySpan<TToken> span) { }
+
+#if NETCOREAPP3_0
+        public static Result<char, T> Parse<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
+        {
+            return DoParse(parser, new DecodingPipeTokenStream(reader, encoding.GetDecoder()), calculatePos ?? ByteDecodingPosCalculator);
+
+            unsafe SourcePos ByteDecodingPosCalculator(char c, SourcePos pos) => new SourcePos(1, pos.Col + encoding.GetByteCount(&c, 1));
+        }
+#endif
 
         private static Result<TToken, T> DoParse<TToken, T>(Parser<TToken, T> parser, ITokenStream<TToken> stream, Func<TToken, SourcePos, SourcePos> calculatePos)
         {
@@ -228,6 +239,11 @@ namespace Pidgin
         /// <returns>The result of parsing</returns>
         public static T ParseOrThrow<TToken, T>(this Parser<TToken, T> parser, ReadOnlySpan<TToken> input, Func<TToken, SourcePos, SourcePos>? calculatePos = null)
             => GetValueOrThrow(parser.Parse(input, calculatePos));
+
+#if NETCOREAPP3_0
+        public static T ParseOrThrow<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
+            => GetValueOrThrow(parser.Parse(reader, encoding, calculatePos));
+#endif
 
         private static T GetValueOrThrow<TToken, T>(Result<TToken, T> result)
             => result.Success ? result.Value : throw new ParseException(result.Error!.RenderErrorMessage());
