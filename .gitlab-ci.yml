@@ -1,0 +1,55 @@
+image: mcr.microsoft.com/dotnet/core/sdk:3.0-alpine
+
+stages:
+    - build
+    - test
+    - pack
+
+variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    DOCKER_DRIVER: overlay2
+
+build:
+    stage: build
+    tags:
+        - docker
+    before_script:
+        - cd Pidgin
+    script:
+        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
+
+test:
+    stage: test
+    tags:
+        - docker
+    dependencies:
+        - build
+    before_script:
+        - cd Pidgin.Tests
+    script:
+        - dotnet test 
+
+pack:
+    stage: pack
+    tags:
+        - docker
+    dependencies:
+        - test
+    only:
+        - master
+    before_script:
+        - cd Pidgin       
+        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
+    script:
+        - dotnet pack --version-suffix marta -c release
+        - dotnet nuget push -k $NUGET_API_KEY  -s $NUGET_URL  ./bin/release/*.nupkg
+
+#  gitlab-runner register -n \
+#    --url https://gitlab.marta.nesad.fit.vutbr.cz/ \
+#    --registration-token <TOKEN>\
+#    --executor docker \
+#    --description "node1-m host runner" \
+#    --docker-image "docker:stable" \
+#    --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+#    --docker-network-mode host \
+#    --tag-list docker,linux
