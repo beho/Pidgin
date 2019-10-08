@@ -41,8 +41,8 @@ pack:
         - cd Pidgin       
         - dotnet build --disable-parallel -f netcoreapp3.0
     script:
-        - dotnet pack --version-suffix marta
-        - dotnet nuget push -k $NUGET_API_KEY  -s $NUGET_URL  ./bin/Release/*.nupkg
+        - dotnet pack -c release
+        - dotnet nuget push -k $NUGET_API_KEY  -s $NUGET_URL  ./bin/release/*.nupkg
 
 #  gitlab-runner register -n \
 #    --url https://gitlab.marta.nesad.fit.vutbr.cz/ \

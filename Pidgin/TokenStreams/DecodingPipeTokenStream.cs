@@ -88,6 +88,12 @@ namespace Pidgin.TokenStreams
                 return await ReadInto(buffer, startIndex, length);
             }
 
+            // TODO ensure that reader is ready to be read before return?
+            //if (_read)
+            //{
+            //    Advance(_currentSegmentExamined, origin);
+            //}
+
             return charsUsed;
         }
 
