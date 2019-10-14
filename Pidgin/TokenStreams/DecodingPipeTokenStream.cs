@@ -11,17 +11,18 @@ namespace Pidgin.TokenStreams
     {
         public int ChunkSizeHint => 4096;
 
-        private PipeReader _reader;
-        private bool _completed = false;
-        private bool _read = false;
-        private ReadOnlySequence<byte> _currentSequence;
-        private ReadOnlyMemory<byte> _currentSegment;
-        private SequencePosition _initialPosition;
-        private SequencePosition _position;
-        private long _examined;
-        private int _currentSegmentExamined;
+        private readonly PipeReader _reader;
+        private readonly Decoder _decoder;
 
-        private Decoder _decoder;
+        private bool _isCompleted = false;
+        private bool _isAdvanceRequired = false;
+
+        private ReadOnlySequence<byte> _currentSequence;
+        private SequencePosition _examinedPosition;
+
+        private ReadOnlyMemory<byte> _currentSegment;
+        private SequencePosition _currentSegmentStart;
+
 
         public DecodingPipeTokenStream(PipeReader reader, Decoder decoder)
         {
@@ -33,71 +34,54 @@ namespace Pidgin.TokenStreams
         public int ReadInto(char[] buffer, int startIndex, int length)
         {
             // initial read
-            if (_currentSequence.IsEmpty)
+            if (!_isCompleted && _currentSequence.IsEmpty)
             {
-                Read();
+                Read(resetExamined: true);
             }
 
-            SequencePosition origin = _position;
-            // if previous _reader.ReadAsync signaled completion and all data are processed
-            while (_currentSegment.IsEmpty && !_currentSequence.TryGet(ref _position, out _currentSegment, advance: true))
+            // try to obtain next segment if current one is empty
+            if (_currentSegment.IsEmpty && !TryGetNextSequenceSegment())
             {
-                if (_read)
+                if (_isAdvanceRequired)
                 {
-                    Advance(_currentSegmentExamined, origin);
+                    Advance();
                 }
 
-                if (_completed)
+                // 1/ last read signaled IsCompleted
+                // 2/ cannot obtain another segment by virtue of being here
+                if (_isCompleted)
                 {
                     return 0;
                 }
 
-                // TryGet with advance=true modifies _position to next segment but any reading is relative to _position before call
-                origin = _position;
-                _currentSegmentExamined = 0;
-
                 Read();
             }
 
-            int spanLength = Math.Min(_currentSegment.Length, length);
-
-            // reader is not completed but we consumed all we read 
-            // and we cannot return 0 - it would mean end of token stream
-            // so read again
-            if (spanLength == 0)
+            int charsDecoded = 0;
+            var chars = new Span<char>(buffer, startIndex, length);
+            do
             {
-                if (_read)
-                {
-                    Advance(_examined, _initialPosition);
-                }
+                ReadOnlySpan<byte> bytes = _currentSegment.Span.Slice(0, Math.Min(_currentSegment.Length, length));
 
-                return ReadInto(buffer, startIndex, length);
-            }
+                _decoder.Convert(bytes, chars, false, out int bytesUsed, out int segmentCharsDecoded, out bool _);
+                charsDecoded += segmentCharsDecoded;
+                chars = chars.Slice(segmentCharsDecoded);
 
-            ReadOnlySpan<byte> span = _currentSegment.Span.Slice(0, spanLength);
-            _decoder.Convert(span, buffer, false, out int bytesUsed, out int charsUsed, out bool _);
-
-            _currentSegment = _currentSegment.Slice(bytesUsed);
-            _examined += spanLength;
-            _currentSegmentExamined += spanLength;
+                _currentSegment = _currentSegment.Slice(bytesUsed);
+                _examinedPosition = _currentSequence.GetPosition(bytesUsed, _examinedPosition);
+            } while (!chars.IsEmpty && (!_currentSegment.IsEmpty || TryGetNextSequenceSegment()));
 
             // we could not decode any character even though spanLength > 0
             // so read again
-            if (charsUsed == 0)
+            if (charsDecoded == 0)
             {
                 return ReadInto(buffer, startIndex, length);
             }
 
-            // TODO ensure that reader is ready to be read before return?
-            //if (_read)
-            //{
-            //    Advance(_currentSegmentExamined, origin);
-            //}
-
-            return charsUsed;
+            return charsDecoded;
         }
 
-        private void Read()
+        private void Read(bool resetExamined = false)
         {
             ValueTask<ReadResult> task = _reader.ReadAsync();
 
@@ -112,34 +96,39 @@ namespace Pidgin.TokenStreams
             }
 
             _currentSequence = result.Buffer;
-            _initialPosition = _currentSequence.Start;
+            _isCompleted = result.IsCompleted;
 
-            // jump to already examined position
-            _position = _currentSequence.GetPosition(_examined);
-            _completed = result.IsCompleted;
+            if (resetExamined)
+            {
+                _examinedPosition = _currentSequence.Start;
+            }
 
-            _read = true;
+            // we are storing _examinedPosition between Read calls
+            // this presupposes that no one else is reading from the pipe
+            // otherwise segment in _examinedPosition might reference already consumed one
+            _currentSegmentStart = _examinedPosition;
+            TryGetNextSequenceSegment();
+
+            _isAdvanceRequired = true;
         }
 
-        private void Advance(long offset, SequencePosition origin)
+        private void Advance()
         {
-            SequencePosition examinedPosition = origin.Equals(default)
-                ? _currentSequence.GetPosition(_examined, _initialPosition)
-                : _currentSequence.GetPosition(offset, origin);
-
-            _reader.AdvanceTo(_initialPosition, examinedPosition);
-            _read = false;
+            _reader.AdvanceTo(_currentSequence.Start, _currentSequence.End);
+            _isAdvanceRequired = false;
         }
+
+        private bool TryGetNextSequenceSegment()
+            => _currentSequence.TryGet(ref _currentSegmentStart, out _currentSegment, advance: true);
 
         public void Dispose()
         {
-            _reader = null;
             _currentSequence = default;
+            _examinedPosition = default;
             _currentSegment = default;
-            _position = default;
+            _currentSegmentStart = default;
 
             _decoder.Reset();
-            _decoder = null;
         }
     }
 #endif
