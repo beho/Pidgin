@@ -72,7 +72,7 @@ namespace Pidgin.TokenStreams
             var chars = new Span<char>(buffer, startIndex, length);
             do
             {
-                ReadOnlySpan<byte> bytes = _currentSegment.Span.Slice(0, Math.Min(_currentSegment.Length, length));
+                ReadOnlySpan<byte> bytes = _currentSegment.Span.Slice(0, Math.Min(_currentSegment.Length, chars.Length));
 
                 _decoder.Convert(bytes, chars, false, out int bytesUsed, out int segmentCharsDecoded, out bool _);
                 charsDecoded += segmentCharsDecoded;
