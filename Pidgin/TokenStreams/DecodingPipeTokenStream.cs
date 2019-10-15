@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,14 +15,24 @@ namespace Pidgin.TokenStreams
         private readonly PipeReader _reader;
         private readonly Decoder _decoder;
 
-        private bool _isCompleted = false;
-        private bool _isAdvanceRequired = false;
+        private StateFlags _state;
 
         private ReadOnlySequence<byte> _currentSequence;
-        private SequencePosition _examinedPosition;
 
         private ReadOnlyMemory<byte> _currentSegment;
         private SequencePosition _currentSegmentStart;
+
+        private bool IsCompleted
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _state.HasFlag(StateFlags.Completed);
+        }
+
+        private bool IsAdvanceRequired
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _state.HasFlag(StateFlags.AdvanceRequired);
+        }
 
 
         public DecodingPipeTokenStream(PipeReader reader, Decoder decoder)
@@ -34,22 +45,22 @@ namespace Pidgin.TokenStreams
         public async ValueTask<int> ReadInto(char[] buffer, int startIndex, int length)
         {
             // initial read
-            if (!_isCompleted && _currentSequence.IsEmpty)
+            if (!IsCompleted && _currentSequence.IsEmpty)
             {
-                await Read(resetExamined: true);
+                await Read(initialRead: true);
             }
 
             // try to obtain next segment if current one is empty
             if (_currentSegment.IsEmpty && !TryGetNextSequenceSegment())
             {
-                if (_isAdvanceRequired)
+                if (IsAdvanceRequired)
                 {
                     Advance();
                 }
 
                 // 1/ last read signaled IsCompleted
                 // 2/ cannot obtain another segment by virtue of being here
-                if (_isCompleted)
+                if (IsCompleted)
                 {
                     return 0;
                 }
@@ -68,7 +79,6 @@ namespace Pidgin.TokenStreams
                 chars = chars.Slice(segmentCharsDecoded);
 
                 _currentSegment = _currentSegment.Slice(bytesUsed);
-                _examinedPosition = _currentSequence.GetPosition(bytesUsed, _examinedPosition);
             } while (!chars.IsEmpty && (!_currentSegment.IsEmpty || TryGetNextSequenceSegment()));
 
             // we could not decode any character even though spanLength > 0
@@ -81,31 +91,27 @@ namespace Pidgin.TokenStreams
             return charsDecoded;
         }
 
-        private async ValueTask Read(bool resetExamined = false)
+        private async ValueTask Read(bool initialRead = false)
         {
+            SequencePosition examined = _currentSequence.End;
             ReadResult result = await _reader.ReadAsync();
 
             _currentSequence = result.Buffer;
-            _isCompleted = result.IsCompleted;
-
-            if (resetExamined)
+            if (result.IsCompleted)
             {
-                _examinedPosition = _currentSequence.Start;
+                _state |= StateFlags.Completed;
             }
 
-            // we are storing _examinedPosition between Read calls
-            // this presupposes that no one else is reading from the pipe
-            // otherwise segment in _examinedPosition might reference already consumed one
-            _currentSegmentStart = _examinedPosition;
+            _currentSegmentStart = initialRead ? _currentSequence.Start : examined;
             TryGetNextSequenceSegment();
 
-            _isAdvanceRequired = true;
+            _state |= StateFlags.AdvanceRequired;
         }
 
         private void Advance()
         {
             _reader.AdvanceTo(_currentSequence.Start, _currentSequence.End);
-            _isAdvanceRequired = false;
+            _state &= ~StateFlags.AdvanceRequired;
         }
 
         private bool TryGetNextSequenceSegment()
@@ -114,11 +120,17 @@ namespace Pidgin.TokenStreams
         public void Dispose()
         {
             _currentSequence = default;
-            _examinedPosition = default;
             _currentSegment = default;
             _currentSegmentStart = default;
 
             _decoder.Reset();
+        }
+
+        [Flags]
+        private enum StateFlags : byte
+        {
+            Completed = 0x01,
+            AdvanceRequired = 0x02
         }
     }
 #endif
