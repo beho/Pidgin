@@ -93,9 +93,6 @@ namespace Pidgin.TokenStreams
 
         private void Read(bool initialRead = false)
         {
-            // we are storing SequencePosition from previous Read call (unless this is initial read)
-            // this presupposes that no one else is reading from the pipe
-            // otherwise segment in _examinedPosition might reference already consumed one
             SequencePosition examined = _currentSequence.End;
             ValueTask<ReadResult> task = _reader.ReadAsync();
 
