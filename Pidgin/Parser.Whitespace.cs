@@ -1,4 +1,6 @@
+using Pidgin.Extensions;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static Pidgin.Parser<char>;
 
 namespace Pidgin
@@ -32,22 +34,22 @@ namespace Pidgin
 
         private class SkipWhitespacesParser : Parser<char, Unit>
         {
-            internal override InternalResult<Unit> Parse(ref ParseState<char> state)
+            internal override async ValueTask<InternalResult<Unit>> Parse(ParseState<char> state)
             {
                 var startingLoc = state.Location;
-                var chunk = state.LookAhead(32);
+                var chunk = await state.LookAhead(32);
                 while (chunk.Length > 0)
                 {
                     for (var i = 0; i < chunk.Length; i++)
                     {
-                        if (!char.IsWhiteSpace(chunk[i]))
+                        if (!char.IsWhiteSpace(chunk.ValueAt(i))) // TODO optimize with slicing/figure out how to use span
                         {
-                            state.Advance(i);
+                            await state.Advance(i);
                             return InternalResult.Success(Unit.Value, state.Location > startingLoc);
                         }
                     }
-                    state.Advance(chunk.Length);
-                    chunk = state.LookAhead(32);
+                    await state.Advance(chunk.Length);
+                    chunk = await state.LookAhead(32);
                 }
                 return InternalResult.Success(Unit.Value, state.Location > startingLoc);
             }

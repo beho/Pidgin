@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -124,7 +125,7 @@ namespace Pidgin
             }
 
             // see comment about expecteds in ParseState.Error.cs
-            internal sealed override InternalResult<T> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
                 var firstTime = true;
                 var err = new InternalError<TToken>(
@@ -137,7 +138,7 @@ namespace Pidgin
                 foreach (var p in _parsers)
                 {
                     state.BeginExpectedTran();
-                    var thisResult = p.Parse(ref state);
+                    var thisResult = await p.Parse(state);
                     if (thisResult.Success)
                     {
                         // throw out all expecteds
@@ -181,7 +182,7 @@ namespace Pidgin
                 var list = parsers is ICollection<Parser<TToken, T>> coll
                     ? new List<Parser<TToken, T>>(coll.Count)
                     : new List<Parser<TToken, T>>();
-                
+
                 foreach (var p in parsers)
                 {
                     if (p == null)

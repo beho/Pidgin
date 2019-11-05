@@ -1,4 +1,5 @@
 using Pidgin.Examples.Xml;
+using System.Threading.Tasks;
 using Xunit;
 using Attribute = Pidgin.Examples.Xml.Attribute;
 
@@ -8,28 +9,28 @@ namespace Pidgin.Tests
     {
 
         [Fact]
-        public void TestParseSelfClosingTagWithoutAttributes()
+        public async Task TestParseSelfClosingTagWithoutAttributes()
         {
             {
                 var input = "<foo/>";
-                var expected = new Tag("foo", new Attribute[] {}, null);
+                var expected = new Tag("foo", new Attribute[] { }, null);
 
-                var result = XmlParser.Parse(input);
-                
+                var result = await XmlParser.Parse(input);
+
                 Assert.True(result.Success);
                 Assert.Equal(expected, result.Value);
             }
         }
 
         [Fact]
-        public void TestParseSelfClosingTagWithAttributes()
+        public async Task TestParseSelfClosingTagWithAttributes()
         {
             {
                 var input = "<foo bar=\"baz\" wibble=\"wobble\"/>";
                 var expected = new Tag("foo", new[] { new Attribute("bar", "baz"), new Attribute("wibble", "wobble") }, null);
 
-                var result = XmlParser.Parse(input);
-    
+                var result = await XmlParser.Parse(input);
+
                 Assert.True(result.Success);
                 Assert.NotNull(result.Value);
                 Assert.Equal(expected, result.Value);
@@ -37,13 +38,13 @@ namespace Pidgin.Tests
         }
 
         [Fact]
-        public void TestParseTagWithNoContentAndNoAttributes()
+        public async Task TestParseTagWithNoContentAndNoAttributes()
         {
             {
                 var input = "<foo> </foo>";
-                var expected = new Tag("foo", new Attribute[]{}, new Tag[]{});
+                var expected = new Tag("foo", new Attribute[] { }, new Tag[] { });
 
-                var result = XmlParser.Parse(input);
+                var result = await XmlParser.Parse(input);
 
                 Assert.True(result.Success);
                 Assert.NotNull(result.Value);
@@ -52,16 +53,16 @@ namespace Pidgin.Tests
         }
 
         [Fact]
-        public void TestParseTagWithContentAndAttributes()
+        public async Task TestParseTagWithContentAndAttributes()
         {
             {
                 var input = "<foo bar=\"baz\" wibble=\"wobble\"><bar></bar><baz/></foo>";
                 var expected = new Tag(
                     "foo",
                     new[] { new Attribute("bar", "baz"), new Attribute("wibble", "wobble") },
-                    new[] { new Tag("bar", new Attribute[]{}, new Tag[]{}), new Tag("baz", new Attribute[]{}, null) });
-                
-                var result = XmlParser.Parse(input);
+                    new[] { new Tag("bar", new Attribute[] { }, new Tag[] { }), new Tag("baz", new Attribute[] { }, null) });
+
+                var result = await XmlParser.Parse(input);
 
                 Assert.True(result.Success);
                 Assert.NotNull(result.Value);
@@ -70,12 +71,12 @@ namespace Pidgin.Tests
         }
 
         [Fact]
-        public void TestParseMismatchingTags()
+        public async Task TestParseMismatchingTags()
         {
             {
                 var input = "<foo></bar>";
 
-                var result = XmlParser.Parse(input);
+                var result = await XmlParser.Parse(input);
 
                 Assert.False(result.Success);
             }

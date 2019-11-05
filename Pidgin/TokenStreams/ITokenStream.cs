@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
 {
@@ -6,6 +7,6 @@ namespace Pidgin.TokenStreams
     {
         int ChunkSizeHint { get; }
 
-        int ReadInto(TToken[] buffer, int startIndex, int length);
+        ValueTask<int> ReadInto(TToken[] buffer, int startIndex, int length);
     }
 }

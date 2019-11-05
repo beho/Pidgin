@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -25,9 +26,9 @@ namespace Pidgin
                 _factory = factory;
             }
 
-            internal override InternalResult<U> Parse(ref ParseState<TToken> state)
+            internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state)
             {
-                var result1 = _parser.Parse(ref state);
+                var result1 = await _parser.Parse(state);
                 if (!result1.Success)
                 {
                     // state.Error set by _parser
@@ -39,7 +40,7 @@ namespace Pidgin
                 var consumedInput = result1.ConsumedInput;
 
                 state.BeginExpectedTran();
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
                 while (result.Success)
                 {
                     state.EndExpectedTran(false);
@@ -52,7 +53,7 @@ namespace Pidgin
                     chainer.Apply(result.Value);
 
                     state.BeginExpectedTran();
-                    result = _parser.Parse(ref state);
+                    result = await _parser.Parse(state);
                 }
                 state.EndExpectedTran(result.ConsumedInput);
                 if (result.ConsumedInput)  // the most recent parser failed after consuming input

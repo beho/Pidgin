@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -22,8 +22,8 @@ namespace Pidgin
                 _value = value;
             }
 
-            internal sealed override InternalResult<T> Parse(ref ParseState<TToken> state)
-                => InternalResult.Success<T>(_value, false);
+            internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+                => new ValueTask<InternalResult<T>>(InternalResult.Success<T>(_value, false));
         }
     }
 }

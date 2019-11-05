@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using Pidgin;
 using Pidgin.Expression;
 using static Pidgin.Parser;
@@ -62,7 +63,7 @@ namespace Pidgin.Examples.Expression
             )
         ).Labelled("expression");
 
-        public static IExpr ParseOrThrow(string input)
+        public static ValueTask<IExpr> ParseOrThrow(string input)
             => Expr.ParseOrThrow(input);
     }
 }

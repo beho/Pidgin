@@ -1,7 +1,6 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -24,7 +23,7 @@ namespace Pidgin
             return terminator.Then(ReturnEmptyEnumerable)
                 .Or(this.AtLeastOnceUntil(terminator));
         }
-        
+
         /// <summary>
         /// Creates a parser which applies this parser one or more times until <paramref name="terminator"/> succeeds.
         /// Fails if this parser fails or if <paramref name="terminator"/> fails after consuming input.
@@ -59,7 +58,7 @@ namespace Pidgin
             return terminator.Then(ReturnUnit)
                 .Or(this.SkipAtLeastOnceUntil(terminator));
         }
-        
+
         /// <summary>
         /// Creates a parser which applies this parser one or more times until <paramref name="terminator"/> succeeds, discarding the results.
         /// This is more efficient than <see cref="AtLeastOnceUntil{U}(Parser{TToken, U})"/> if you don't need the results.
@@ -91,11 +90,11 @@ namespace Pidgin
             }
 
             // see comment about expecteds in ParseState.Error.cs
-            internal override InternalResult<IEnumerable<T>?> Parse(ref ParseState<TToken> state)
+            internal override async ValueTask<InternalResult<IEnumerable<T>?>> Parse(ParseState<TToken> state)
             {
                 var ts = _keepResults ? new List<T>() : null;
 
-                var firstItemResult = _parser.Parse(ref state);
+                var firstItemResult = await _parser.Parse(state);
                 if (!firstItemResult.Success)
                 {
                     // state.Error set by _parser
@@ -110,7 +109,7 @@ namespace Pidgin
                 while (true)
                 {
                     state.BeginExpectedTran();
-                    var terminatorResult = _terminator.Parse(ref state);
+                    var terminatorResult = await _terminator.Parse(state);
                     if (terminatorResult.Success)
                     {
                         state.EndExpectedTran(false);
@@ -124,7 +123,7 @@ namespace Pidgin
                     }
 
                     state.BeginExpectedTran();
-                    var itemResult = _parser.Parse(ref state);
+                    var itemResult = await _parser.Parse(state);
                     if (!itemResult.Success)
                     {
                         if (!itemResult.ConsumedInput)

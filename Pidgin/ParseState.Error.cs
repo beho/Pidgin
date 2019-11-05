@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Pidgin
 {
-    internal partial struct ParseState<TToken>
+    internal partial class ParseState<TToken>
     {
         private bool _eof;
         private Maybe<TToken> _unexpected;

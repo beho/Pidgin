@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static Pidgin.Parser;
 using static Pidgin.Parser<char>;
 
@@ -7,7 +8,7 @@ namespace Pidgin.Examples.Xml
 {
     public static class XmlParser
     {
-        public static Result<char, Tag> Parse(string input) => Node.Parse(input);
+        public static ValueTask<Result<char, Tag>> Parse(string input) => Node.Parse(input);
 
         static readonly Parser<char, string> Identifier =
             from first in Token(char.IsLetter)
@@ -21,13 +22,13 @@ namespace Pidgin.Examples.Xml
         static readonly Parser<char, char> Slash = Char('/');
         static readonly Parser<char, Unit> SlashGT =
             Slash.Then(Whitespaces).Then(GT).Then(Return(Unit.Value));
-        static readonly Parser<char, Unit> LTSlash = 
+        static readonly Parser<char, Unit> LTSlash =
             LT.Then(Whitespaces).Then(Slash).Then(Return(Unit.Value));
-        
-        static readonly Parser<char, string> AttrValue = 
+
+        static readonly Parser<char, string> AttrValue =
             Token(c => c != '"').ManyString();
 
-        static readonly Parser<char, Attribute> Attr = 
+        static readonly Parser<char, Attribute> Attr =
             from name in Identifier
             from eq in Equal.Between(SkipWhitespaces)
             from val in AttrValue.Between(Quote)
@@ -64,7 +65,7 @@ namespace Pidgin.Examples.Xml
             from close in ClosingTag
             where open.Name.Equals(close)
             select new Tag(open.Name, open.Attributes, children);
-    
+
         static readonly Parser<char, Tag> Node = Try(EmptyElementTag).Or(Tag);
 
         private struct OpeningTagInfo

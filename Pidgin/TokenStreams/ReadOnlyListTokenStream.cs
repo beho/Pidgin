@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
 {
@@ -16,7 +17,7 @@ namespace Pidgin.TokenStreams
             _input = value;
         }
 
-        public int ReadInto(TToken[] buffer, int startIndex, int length)
+        public ValueTask<int> ReadInto(TToken[] buffer, int startIndex, int length)
         {
             var actualLength = Math.Min(_input.Count - _index, length);
             for (var i = 0; i < actualLength; i++)
@@ -24,7 +25,7 @@ namespace Pidgin.TokenStreams
                 buffer[startIndex + i] = _input[_index];
                 _index++;
             }
-            return actualLength;
+            return new ValueTask<int>(actualLength);
         }
 
         public void Dispose() { }

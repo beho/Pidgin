@@ -11,5 +11,5 @@ namespace Pidgin
     /// <typeparam name="TParam">The type of the additional argument</typeparam>
     /// <typeparam name="TReturn">The type of the result computed by the function</typeparam>
     /// <returns>The result</returns>
-    public delegate TReturn ReadOnlySpanFunc<T, in TParam, out TReturn>(ReadOnlySpan<T> span, TParam param);
+    public delegate TReturn ReadOnlyMemoryFunc<T, in TParam, out TReturn>(ReadOnlyMemory<T> span, TParam param);
 }

@@ -1,5 +1,5 @@
 using System;
-using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -19,7 +19,7 @@ namespace Pidgin
         /// </param>
         /// <typeparam name="U">The result type</typeparam>
         /// <returns>A parser which runs the current parser and applies a selector function.</returns>
-        public Parser<TToken, U> MapWithInput<U>(ReadOnlySpanFunc<TToken, T, U> selector)
+        public Parser<TToken, U> MapWithInput<U>(ReadOnlyMemoryFunc<TToken, T, U> selector)
         {
             if (selector == null)
             {
@@ -31,20 +31,20 @@ namespace Pidgin
         private class MapWithInputParser<U> : Parser<TToken, U>
         {
             private Parser<TToken, T> _parser;
-            private ReadOnlySpanFunc<TToken, T, U> _selector;
+            private ReadOnlyMemoryFunc<TToken, T, U> _selector;
 
-            public MapWithInputParser(Parser<TToken, T> parser, ReadOnlySpanFunc<TToken, T, U> selector)
+            public MapWithInputParser(Parser<TToken, T> parser, ReadOnlyMemoryFunc<TToken, T, U> selector)
             {
                 _parser = parser;
                 _selector = selector;
             }
 
-            internal override InternalResult<U> Parse(ref ParseState<TToken> state)
+            internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state)
             {
                 var start = state.Location;
 
                 state.PushBookmark();  // don't discard input buffer
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
 
 
                 if (!result.Success)

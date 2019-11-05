@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using static Pidgin.Parser;
 using static Pidgin.Parser<char>;
 
@@ -23,27 +24,27 @@ namespace Pidgin.Examples.Json
                 .Between(Quote);
         private static readonly Parser<char, IJson> JsonString =
             String.Select<IJson>(s => new JsonString(s));
-            
+
         private static readonly Parser<char, IJson> Json =
             JsonString.Or(Rec(() => JsonArray)).Or(Rec(() => JsonObject));
 
-        private static readonly Parser<char, IJson> JsonArray = 
+        private static readonly Parser<char, IJson> JsonArray =
             Json.Between(SkipWhitespaces)
                 .Separated(Comma)
                 .Between(LBracket, RBracket)
                 .Select<IJson>(els => new JsonArray(els.ToImmutableArray()));
-        
+
         private static readonly Parser<char, KeyValuePair<string, IJson>> JsonMember =
             String
                 .Before(ColonWhitespace)
                 .Then(Json, (name, val) => new KeyValuePair<string, IJson>(name, val));
 
-        private static readonly Parser<char, IJson> JsonObject = 
+        private static readonly Parser<char, IJson> JsonObject =
             JsonMember.Between(SkipWhitespaces)
                 .Separated(Comma)
                 .Between(LBrace, RBrace)
                 .Select<IJson>(kvps => new JsonObject(kvps.ToImmutableDictionary()));
-        
-        public static Result<char, IJson> Parse(string input) => Json.Parse(input);
+
+        public static ValueTask<Result<char, IJson>> Parse(string input) => Json.Parse(input);
     }
 }

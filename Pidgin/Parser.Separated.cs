@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -22,7 +22,7 @@ namespace Pidgin
             return this.SeparatedAtLeastOnce(separator)
                 .Or(ReturnEmptyEnumerable);
         }
-        
+
         /// <summary>
         /// Creates a parser which applies the current parser at least once, interleaved with a specified parser.
         /// The resulting parser ignores the return value of the separator parser.
@@ -50,21 +50,21 @@ namespace Pidgin
                 _remainderParser = separator.Then(parser);
             }
 
-            internal override InternalResult<IEnumerable<T>> Parse(ref ParseState<TToken> state)
+            internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state)
             {
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
                 if (!result.Success)
                 {
                     // state.Error set by _parser
                     return InternalResult.Failure<IEnumerable<T>>(result.ConsumedInput);
                 }
-                return Rest(_remainderParser, ref state, new List<T> { result.Value }, result.ConsumedInput);
+                return await Rest(_remainderParser, state, new List<T> { result.Value }, result.ConsumedInput);
             }
 
-            private InternalResult<IEnumerable<T>> Rest(Parser<TToken, T> parser, ref ParseState<TToken> state, List<T> ts, bool consumedInput)
+            private async ValueTask<InternalResult<IEnumerable<T>>> Rest(Parser<TToken, T> parser, ParseState<TToken> state, List<T> ts, bool consumedInput)
             {
                 state.BeginExpectedTran();
-                var result = parser.Parse(ref state);
+                var result = await parser.Parse(state);
                 while (result.Success)
                 {
                     state.EndExpectedTran(false);
@@ -75,7 +75,7 @@ namespace Pidgin
                     consumedInput = true;
                     ts.Add(result.Value);
                     state.BeginExpectedTran();
-                    result = parser.Parse(ref state);
+                    result = await parser.Parse(state);
                 }
                 state.EndExpectedTran(result.ConsumedInput);
                 if (result.ConsumedInput)  // the most recent parser failed after consuming input
@@ -102,7 +102,7 @@ namespace Pidgin
             }
             return this.Before(separator).Many();
         }
-        
+
         /// <summary>
         /// Creates a parser which applies the current parser at least once, interleaved and terminated with a specified parser.
         /// The resulting parser ignores the return value of the separator parser.
@@ -135,7 +135,7 @@ namespace Pidgin
             return this.SeparatedAndOptionallyTerminatedAtLeastOnce(separator)
                 .Or(ReturnEmptyEnumerable);
         }
-        
+
         /// <summary>
         /// Creates a parser which applies the current parser at least once, interleaved and optionally terminated with a specified parser.
         /// The resulting parser ignores the return value of the separator parser.
@@ -163,9 +163,9 @@ namespace Pidgin
                 _separator = separator;
             }
 
-            internal override InternalResult<IEnumerable<T>> Parse(ref ParseState<TToken> state)
+            internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state)
             {
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
                 if (!result.Success)
                 {
                     // state.Error set by _parser
@@ -177,7 +177,7 @@ namespace Pidgin
                 while (true)
                 {
                     state.BeginExpectedTran();
-                    var sepResult = _separator.Parse(ref state);
+                    var sepResult = await _separator.Parse(state);
                     state.EndExpectedTran(!sepResult.Success && sepResult.ConsumedInput);
                     consumedInput = consumedInput || sepResult.ConsumedInput;
                     if (!sepResult.Success)
@@ -191,7 +191,7 @@ namespace Pidgin
                     }
 
                     state.BeginExpectedTran();
-                    var itemResult = _parser.Parse(ref state);
+                    var itemResult = await _parser.Parse(state);
                     state.EndExpectedTran(!itemResult.Success && itemResult.ConsumedInput);
                     consumedInput = consumedInput || itemResult.ConsumedInput;
                     if (!itemResult.Success)

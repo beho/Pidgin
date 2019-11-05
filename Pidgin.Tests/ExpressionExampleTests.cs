@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using Pidgin.Examples.Expression;
 using Xunit;
 
@@ -7,7 +8,7 @@ namespace Pidgin.Tests
     public class ExpressionExampleTests
     {
         [Fact]
-        public void TestExpression()
+        public async Task TestExpression()
         {
             var input = "12 * 3 + foo(-3, x)() * (2 + 1)";
 
@@ -41,7 +42,7 @@ namespace Pidgin.Tests
                 )
             );
 
-            Assert.Equal(ExprParser.ParseOrThrow(input), expected);
+            Assert.Equal(await ExprParser.ParseOrThrow(input), expected);
         }
     }
 }
