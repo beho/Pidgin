@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>2.2.0</VersionPrefix>
-    <VersionSuffix>marta.4</VersionSuffix>
+    <VersionSuffix>marta.async.5</VersionSuffix>
 
     <Authors>benjamin.hodgson</Authors>
     <Copyright>© Benjamin Hodgson, 2017</Copyright>
