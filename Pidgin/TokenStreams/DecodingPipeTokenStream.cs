@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
 {
-#if NETCOREAPP3_0
     class DecodingPipeTokenStream : ITokenStream<char>
     {
         public int ChunkSizeHint => 4096;
@@ -75,6 +74,7 @@ namespace Pidgin.TokenStreams
                 ReadOnlyMemory<byte> bytes = _currentSegment.Slice(0, Math.Min(_currentSegment.Length, chars.Length));
 
                 _decoder.Convert(bytes.Span, chars.Span, false, out int bytesUsed, out int segmentCharsDecoded, out bool _);
+
                 charsDecoded += segmentCharsDecoded;
                 chars = chars.Slice(segmentCharsDecoded);
 
@@ -133,5 +133,4 @@ namespace Pidgin.TokenStreams
             AdvanceRequired = 0x02
         }
     }
-#endif
 }

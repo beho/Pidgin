@@ -16,7 +16,7 @@ build:
     before_script:
         - cd Pidgin
     script:
-        - dotnet build --disable-parallel -f netcoreapp3.0
+        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
 
 test:
     stage: test
@@ -27,7 +27,7 @@ test:
     before_script:
         - cd Pidgin.Tests
     script:
-        - dotnet test  
+        - dotnet test
 
 pack:
     stage: pack
@@ -39,7 +39,7 @@ pack:
         - master
     before_script:
         - cd Pidgin       
-        - dotnet build --disable-parallel -f netcoreapp3.0
+        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
     script:
         - dotnet pack -c release
         - dotnet nuget push -k $NUGET_API_KEY  -s $NUGET_URL  ./bin/release/*.nupkg
