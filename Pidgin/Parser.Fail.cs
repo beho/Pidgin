@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -19,7 +20,7 @@ namespace Pidgin
             }
             return new FailParser<T>(message);
         }
-        
+
         private sealed class FailParser<T> : Parser<TToken, T>
         {
             private static readonly Expected<TToken> _expected
@@ -31,7 +32,7 @@ namespace Pidgin
                 _message = message;
             }
 
-            internal sealed override InternalResult<T> Parse(ref ParseState<TToken> state)
+            internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
                 state.Error = new InternalError<TToken>(
                     Maybe.Nothing<TToken>(),
@@ -40,7 +41,7 @@ namespace Pidgin
                     _message
                 );
                 state.AddExpected(_expected);
-                return InternalResult.Failure<T>(false);
+                return new ValueTask<InternalResult<T>>(InternalResult.Failure<T>(false));
             }
         }
     }

@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -20,9 +18,9 @@ namespace Pidgin
             {
                 throw new ArgumentNullException(nameof(parser));
             }
-            return new NegatedParser<TToken, T>(parser);            
+            return new NegatedParser<TToken, T>(parser);
         }
-        
+
         private sealed class NegatedParser<TToken, T> : Parser<TToken, Unit>
         {
             private readonly Parser<TToken, T> _parser;
@@ -32,14 +30,14 @@ namespace Pidgin
                 _parser = parser;
             }
 
-            internal sealed override InternalResult<Unit> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state)
             {
                 var startingLocation = state.Location;
                 var token = state.HasCurrent ? Maybe.Just(state.Current) : Maybe.Nothing<TToken>();
 
                 state.PushBookmark();  // make sure we don't throw out the buffer, we may need it to compute a SourcePos
                 state.BeginExpectedTran();
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
                 state.EndExpectedTran(false);
                 state.PopBookmark();
                 if (result.Success)

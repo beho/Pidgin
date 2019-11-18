@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -13,8 +13,8 @@ namespace Pidgin
 
         private sealed class CurrentPosParser : Parser<TToken, SourcePos>
         {
-            internal override InternalResult<SourcePos> Parse(ref ParseState<TToken> state)
-                => InternalResult.Success(state.ComputeSourcePos(), false);
+            internal override ValueTask<InternalResult<SourcePos>> Parse(ParseState<TToken> state)
+                => new ValueTask<InternalResult<SourcePos>>(InternalResult.Success(state.ComputeSourcePos(), false));
         }
     }
 }

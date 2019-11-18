@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -36,7 +37,7 @@ namespace Pidgin
                 _token = token;
             }
 
-            internal sealed override InternalResult<TToken> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state)
             {
                 if (!state.HasCurrent)
                 {
@@ -61,7 +62,7 @@ namespace Pidgin
                     state.AddExpected(Expected);
                     return InternalResult.Failure<TToken>(false);
                 }
-                state.Advance();
+                await state.Advance();
                 return InternalResult.Success<TToken>(token, true);
             }
         }
@@ -89,7 +90,7 @@ namespace Pidgin
                 _predicate = predicate;
             }
 
-            internal sealed override InternalResult<TToken> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state)
             {
                 if (!state.HasCurrent)
                 {
@@ -112,7 +113,7 @@ namespace Pidgin
                     );
                     return InternalResult.Failure<TToken>(false);
                 }
-                state.Advance();
+                await state.Advance();
                 return InternalResult.Success<TToken>(token, true);
             }
         }

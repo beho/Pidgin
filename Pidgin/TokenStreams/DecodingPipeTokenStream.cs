@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
 {
-#if NETCOREAPP3_0
     class DecodingPipeTokenStream : ITokenStream<char>
     {
         public int ChunkSizeHint => 4096;
@@ -42,12 +41,12 @@ namespace Pidgin.TokenStreams
         }
 
 
-        public int ReadInto(char[] buffer, int startIndex, int length)
+        public async ValueTask<int> ReadInto(char[] buffer, int startIndex, int length)
         {
             // initial read
             if (!IsCompleted && _currentSequence.IsEmpty)
             {
-                Read(initialRead: true);
+                await Read(initialRead: true);
             }
 
             // try to obtain next segment if current one is empty
@@ -65,16 +64,17 @@ namespace Pidgin.TokenStreams
                     return 0;
                 }
 
-                Read();
+                await Read();
             }
 
             int charsDecoded = 0;
-            var chars = new Span<char>(buffer, startIndex, length);
+            var chars = new Memory<char>(buffer, startIndex, length);
             do
             {
-                ReadOnlySpan<byte> bytes = _currentSegment.Span.Slice(0, Math.Min(_currentSegment.Length, chars.Length));
+                ReadOnlyMemory<byte> bytes = _currentSegment.Slice(0, Math.Min(_currentSegment.Length, chars.Length));
 
-                _decoder.Convert(bytes, chars, false, out int bytesUsed, out int segmentCharsDecoded, out bool _);
+                _decoder.Convert(bytes.Span, chars.Span, false, out int bytesUsed, out int segmentCharsDecoded, out bool _);
+
                 charsDecoded += segmentCharsDecoded;
                 chars = chars.Slice(segmentCharsDecoded);
 
@@ -85,20 +85,16 @@ namespace Pidgin.TokenStreams
             // so read again
             if (charsDecoded == 0)
             {
-                return ReadInto(buffer, startIndex, length);
+                return await ReadInto(buffer, startIndex, length);
             }
 
             return charsDecoded;
         }
 
-        private void Read(bool initialRead = false)
+        private async ValueTask Read(bool initialRead = false)
         {
             SequencePosition examined = _currentSequence.End;
-            ValueTask<ReadResult> task = _reader.ReadAsync();
-
-            ReadResult result = task.IsCompleted
-                ? task.Result
-                : task.AsTask().GetAwaiter().GetResult();
+            ReadResult result = await _reader.ReadAsync();
 
             _currentSequence = result.Buffer;
             if (result.IsCompleted)
@@ -137,5 +133,4 @@ namespace Pidgin.TokenStreams
             AdvanceRequired = 0x02
         }
     }
-#endif
 }

@@ -27,7 +27,7 @@ test:
     before_script:
         - cd Pidgin.Tests
     script:
-        - dotnet test 
+        - dotnet test
 
 pack:
     stage: pack

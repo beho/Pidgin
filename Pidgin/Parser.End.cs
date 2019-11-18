@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -13,7 +12,7 @@ namespace Pidgin
 
         private sealed class EndParser : Parser<TToken, Unit>
         {
-            internal sealed override InternalResult<Unit> Parse(ref ParseState<TToken> state)
+            internal sealed override ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state)
             {
                 if (state.HasCurrent)
                 {
@@ -24,9 +23,9 @@ namespace Pidgin
                         null
                     );
                     state.AddExpected(new Expected<TToken>());
-                    return InternalResult.Failure<Unit>(false);
+                    return new ValueTask<InternalResult<Unit>>(InternalResult.Failure<Unit>(false));
                 }
-                return InternalResult.Success(Unit.Value, false);
+                return new ValueTask<InternalResult<Unit>>(InternalResult.Success(Unit.Value, false));
             }
         }
     }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>2.2.0</VersionPrefix>
-    <VersionSuffix>marta.4</VersionSuffix>
+    <VersionSuffix>marta.async.5</VersionSuffix>
 
     <Authors>benjamin.hodgson</Authors>
     <Copyright>© Benjamin Hodgson, 2017</Copyright>
@@ -20,11 +20,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(APPVEYOR)' == 'True'">
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0;net451</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(APPVEYOR)' == ''">
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <DefineConstants>$(DefineConstants);NETCOREAPP</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,9 +38,5 @@
     <PackageReference Include="System.Memory" Version="4.5.1" />
     <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
-
-  <Target Name="RewriteDll" AfterTargets="AfterBuild">
-    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)/../Pidgin.DllRewriter&quot; &quot;$(TargetFramework)&quot; &quot;$(MSBuildProjectDirectory)/$(OutputPath)Pidgin.dll&quot;" />
-  </Target>
 
 </Project>

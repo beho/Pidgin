@@ -2,21 +2,26 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Pidgin.TokenStreams;
 
 namespace Pidgin
 {
-    /// <summary>
-    /// A mutable struct! Careful!
-    /// </summary>
-    [StructLayout(LayoutKind.Auto)]
-    internal partial struct ParseState<TToken>
+    internal partial class ParseState<TToken>
     {
+        private static readonly bool _needsClear =
+#if NETCOREAPP
+            System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<TToken>();
+#else
+            !typeof(TToken).IsPrimitive;
+#endif
+
         private readonly Func<TToken, SourcePos, SourcePos> _posCalculator;
-        private readonly ITokenStream<TToken> _stream;
+        private readonly ITokenStream<TToken>? _stream;
         private readonly int _bufferChunkSize;
 
         private TToken[]? _buffer;
+        private ReadOnlyMemory<TToken> _memory;
         private int _bufferStartLocation;  // how many tokens had been consumed up to the start of the buffer?
         private int _currentIndex;
         private int _bufferedCount;
@@ -27,6 +32,27 @@ namespace Pidgin
         // because dropping the buffer's prefix would invalidate the bookmarks
         private PooledList<int> _bookmarks;
 
+        public ParseState(Func<TToken, SourcePos, SourcePos> posCalculator, ReadOnlyMemory<TToken> memory)
+        {
+            _posCalculator = posCalculator;
+            _bookmarks = new PooledList<int>();
+            _stream = default;
+
+            _bufferChunkSize = 0;
+            _buffer = default;
+            _memory = memory;
+            _bufferStartLocation = 0;
+            _currentIndex = 0;
+            _bufferedCount = memory.Length;
+            _bufferStartSourcePos = new SourcePos(1, 1);
+
+            _eof = default;
+            _unexpected = default;
+            _errorLocation = default;
+            _message = default;
+            _expecteds = new PooledList<Expected<TToken>>();
+            _expectedBookmarks = new PooledList<int>();
+        }
 
         public ParseState(Func<TToken, SourcePos, SourcePos> posCalculator, ITokenStream<TToken> stream)
         {
@@ -36,10 +62,11 @@ namespace Pidgin
 
             _bufferChunkSize = stream.ChunkSizeHint;
             _buffer = ArrayPool<TToken>.Shared.Rent(_bufferChunkSize);
+            _memory = _buffer;
             _bufferStartLocation = 0;
             _currentIndex = 0;
             _bufferedCount = 0;
-            _bufferStartSourcePos = new SourcePos(1,1);
+            _bufferStartSourcePos = new SourcePos(1, 1);
 
             _eof = default;
             _unexpected = default;
@@ -48,8 +75,11 @@ namespace Pidgin
             _expecteds = new PooledList<Expected<TToken>>();
             _expectedBookmarks = new PooledList<int>();
 
-            Buffer(0);
+            //Buffer(0);
         }
+
+        public ValueTask Initialize()
+            => Buffer(0);
 
         /// <summary>
         /// How many tokens have been consumed in total?
@@ -77,40 +107,43 @@ namespace Pidgin
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return _buffer![_currentIndex];
+                return _memory.Span[_currentIndex];
             }
         }
 
-        public void Advance(int count = 1)
+        public async ValueTask Advance(int count = 1)
         {
             var alreadyBufferedCount = Math.Min(count, _bufferedCount - _currentIndex);
             _currentIndex += alreadyBufferedCount;
             count -= alreadyBufferedCount;
 
-            Buffer(count);
-            
+            await Buffer(count);
+
             var bufferedCount = Math.Min(count, _bufferedCount - _currentIndex);
             _currentIndex += bufferedCount;
             count -= bufferedCount;
         }
         // if it returns a span shorter than count it's because you reached the end of the input
-        public ReadOnlySpan<TToken> LookAhead(int count)
+        public async ValueTask<ReadOnlyMemory<TToken>> LookAhead(int count)
         {
-            Buffer(count);
-            return _buffer.AsSpan().Slice(_currentIndex, Math.Min(_bufferedCount - _currentIndex, count));
+            await Buffer(count);
+            return _memory.Slice(_currentIndex, Math.Min(_bufferedCount - _currentIndex, count));
         }
         // if it returns a span shorter than count it's because you looked further back than the buffer goes
-        public ReadOnlySpan<TToken> LookBehind(int count)
+        public ReadOnlyMemory<TToken> LookBehind(int count)
         {
             var start = Math.Max(0, _currentIndex - count);
-            return _buffer.AsSpan().Slice(start, _currentIndex - start);
+            return _memory.Slice(start, _currentIndex - start);
         }
 
         // postcondition: bufferedLength >= _currentIndex + min(readAhead, AmountLeft(_stream))
-        private void Buffer(int readAhead)
+        private async ValueTask Buffer(int readAhead)
         {
+            // TODO might want to ensure that stack does not overflow by yielding?
+            // await Task.Yield();
+
             var readAheadTo = _currentIndex + readAhead;
-            if (readAheadTo >= _bufferedCount)
+            if (readAheadTo >= _bufferedCount && _buffer != null)
             {
                 // we're about to read past the end of the current chunk. Pull a new chunk from the stream
                 var keepSeenLength = _bookmarks.Count > 0
@@ -147,8 +180,9 @@ namespace Pidgin
 
                     Array.Copy(_buffer, keepFrom, newBuffer, 0, keepLength);
 
-                    ArrayPool<TToken>.Shared.Return(_buffer);
+                    ArrayPool<TToken>.Shared.Return(_buffer, _needsClear);
                     _buffer = newBuffer;
+                    _memory = _buffer;
                 }
                 else if (keepFrom != 0 && keepLength != 0)
                 {
@@ -161,10 +195,10 @@ namespace Pidgin
                 _bufferStartLocation += keepFrom;
                 _currentIndex = keepSeenLength;
                 _bufferedCount = keepLength;
-                _bufferedCount += _stream.ReadInto(_buffer, _bufferedCount, amountToRead);
+                _bufferedCount += await _stream!.ReadInto(_buffer, _bufferedCount, amountToRead);
             }
         }
-        
+
         public void PushBookmark()
         {
             _bookmarks.Add(Location);
@@ -178,7 +212,7 @@ namespace Pidgin
         public void Rewind()
         {
             var bookmark = _bookmarks.Pop();
-            
+
             var delta = Location - bookmark;
 
             if (delta > _currentIndex)
@@ -205,7 +239,7 @@ namespace Pidgin
             var pos = _bufferStartSourcePos;
             for (var i = 0; i < location - _bufferStartLocation; i++)
             {
-                pos = _posCalculator(_buffer![i], pos);
+                pos = _posCalculator(_memory.Span[i], pos);
             }
             return pos;
         }
@@ -214,10 +248,10 @@ namespace Pidgin
         {
             if (_buffer != null)
             {
-                ArrayPool<TToken>.Shared.Return(_buffer);
+                ArrayPool<TToken>.Shared.Return(_buffer, _needsClear);
                 _buffer = null;
             }
-            _stream.Dispose();
+            _stream?.Dispose();
             _bookmarks.Clear();
             _expecteds.Clear();
             _expectedBookmarks.Clear();

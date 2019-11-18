@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
 using Xunit;
 using static System.Linq.Expressions.Expression;
 
@@ -177,7 +178,7 @@ namespace Pidgin.Tests
         {
             public AParser() { }
 
-            internal override InternalResult<T> Parse(ref ParseState<TToken> state)
+            internal override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
                 throw new NotImplementedException();
             }

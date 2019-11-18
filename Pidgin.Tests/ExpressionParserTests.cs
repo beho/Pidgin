@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Pidgin.Expression;
 using Xunit;
 using static Pidgin.Parser;
@@ -96,7 +97,7 @@ namespace Pidgin.Tests
         }
 
         [Fact]
-        public void TestInfixN()
+        public async Task TestInfixN()
         {
             var parser = ExpressionParser.Build(
                 Digit.Select<Expr>(x => new Lit((int)char.GetNumericValue(x))),
@@ -109,24 +110,24 @@ namespace Pidgin.Tests
             );
 
             AssertSuccess(
-                parser.Parse("1"),
+                await parser.Parse("1"),
                 new Lit(1),
                 true
             );
             AssertSuccess(
-                parser.Parse("1*2"),
+                await parser.Parse("1*2"),
                 new Times(new Lit(1), new Lit(2)),
                 true
             );
             AssertSuccess(
-                parser.Parse("1*2*3"),
+                await parser.Parse("1*2*3"),
                 new Times(new Lit(1), new Lit(2)),
                 true
             );
         }
 
         [Fact]
-        public void TestInfixL()
+        public async Task TestInfixL()
         {
             var parser = ExpressionParser.Build(
                 Digit.Select<Expr>(x => new Lit((int)char.GetNumericValue(x))),
@@ -145,26 +146,26 @@ namespace Pidgin.Tests
             );
 
             AssertSuccess(
-                parser.Parse("1"),
+                await parser.Parse("1"),
                 new Lit(1),
                 true
             );
             AssertSuccess(
-                parser.Parse("1+2+3+4"),
+                await parser.Parse("1+2+3+4"),
                 new Plus(new Plus(new Plus(new Lit(1), new Lit(2)), new Lit(3)), new Lit(4)),
                 true
             );
             AssertSuccess(
-                parser.Parse("1+2-3+4"),
+                await parser.Parse("1+2-3+4"),
                 new Plus(new Minus(new Plus(new Lit(1), new Lit(2)), new Lit(3)), new Lit(4)),
                 true
             );
             AssertSuccess(
-                parser.Parse("1*2*3+4*5"),
+                await parser.Parse("1*2*3+4*5"),
                 new Plus(new Times(new Times(new Lit(1), new Lit(2)), new Lit(3)), new Times(new Lit(4), new Lit(5))),
                 true
             );
-            
+
             // should work with large inputs
             var numbers = Enumerable.Repeat(1, 100000);
             var input = string.Join("+", numbers);
@@ -173,14 +174,14 @@ namespace Pidgin.Tests
                 .Cast<Expr>()
                 .Aggregate((Expr?)null, (acc, x) => acc == null ? x : new Plus(acc, x));
             AssertSuccess(
-                parser.Parse(input)!,
+                await parser.Parse(input)!,
                 expected,
                 true
             );
         }
 
         [Fact]
-        public void TestInfixR()
+        public async Task TestInfixR()
         {
             var parser = ExpressionParser.Build(
                 Digit.Select<Expr>(x => new Lit((int)char.GetNumericValue(x))),
@@ -205,27 +206,27 @@ namespace Pidgin.Tests
             );
 
             AssertSuccess(
-                parser.Parse("1"),
+                await parser.Parse("1"),
                 new Lit(1),
                 true
             );
             AssertSuccess(
-                parser.Parse("1+2+3+4"),
+                await parser.Parse("1+2+3+4"),
                 new Plus(new Lit(1), new Plus(new Lit(2), new Plus(new Lit(3), new Lit(4)))),
                 true
             );
             // yeah it's not mathematically accurate but who cares, it's a test
             AssertSuccess(
-                parser.Parse("1+2-3+4"),
+                await parser.Parse("1+2-3+4"),
                 new Plus(new Lit(1), new Minus(new Lit(2), new Plus(new Lit(3), new Lit(4)))),
                 true
             );
             AssertSuccess(
-                parser.Parse("1*2*3+4*5"),
+                await parser.Parse("1*2*3+4*5"),
                 new Plus(new Times(new Lit(1), new Times(new Lit(2), new Lit(3))), new Times(new Lit(4), new Lit(5))),
                 true
             );
-            
+
             // should work with large inputs
             var numbers = Enumerable.Repeat(1, 100000);
             var input = string.Join("+", numbers);
@@ -234,17 +235,17 @@ namespace Pidgin.Tests
                 .Cast<Expr>()
                 .AggregateR((Expr?)null, (x, acc) => acc == null ? x : new Plus(x, acc));
             AssertSuccess(
-                parser.Parse(input)!,
+                await parser.Parse(input)!,
                 expected,
                 true
             );
         }
 
         [Fact]
-        public void TestPrefix()
+        public async Task TestPrefix()
         {
             var parser = ExpressionParser.Build(
-                expr => 
+                expr =>
                     String("false").Select(_ => false)
                         .Or(String("true").Select(_ => true))
                         .Or(expr.Between(Char('('), Char(')'))),
@@ -259,16 +260,16 @@ namespace Pidgin.Tests
                 }
             );
 
-            AssertSuccess(parser.Parse("true"), true, true);
-            AssertSuccess(parser.Parse("!true"), false, true);
-            AssertSuccess(parser.Parse("!(!true)"), true, true);
+            AssertSuccess(await parser.Parse("true"), true, true);
+            AssertSuccess(await parser.Parse("!true"), false, true);
+            AssertSuccess(await parser.Parse("!(!true)"), true, true);
         }
 
         [Fact]
-        public void TestPrefixChainable()
+        public async Task TestPrefixChainable()
         {
             var parser = ExpressionParser.Build(
-                expr => 
+                expr =>
                     String("false").Select(_ => false)
                         .Or(String("true").Select(_ => true))
                         .Or(expr.Between(Char('('), Char(')'))),
@@ -284,16 +285,16 @@ namespace Pidgin.Tests
                 }
             );
 
-            AssertSuccess(parser.Parse("true"), true, true);
-            AssertSuccess(parser.Parse("!true"), false, true);
-            AssertSuccess(parser.Parse("!(!true)"), true, true);
-            AssertSuccess(parser.Parse("!!true"), true, true);
-            AssertSuccess(parser.Parse("!~true"), true, true);
-            AssertSuccess(parser.Parse("~!true"), true, true);
+            AssertSuccess(await parser.Parse("true"), true, true);
+            AssertSuccess(await parser.Parse("!true"), false, true);
+            AssertSuccess(await parser.Parse("!(!true)"), true, true);
+            AssertSuccess(await parser.Parse("!!true"), true, true);
+            AssertSuccess(await parser.Parse("!~true"), true, true);
+            AssertSuccess(await parser.Parse("~!true"), true, true);
         }
 
         [Fact]
-        public void TestPostfix()
+        public async Task TestPostfix()
         {
             Func<dynamic> f = () => true;
 
@@ -309,12 +310,12 @@ namespace Pidgin.Tests
                 }
             );
 
-            AssertSuccess(parser.Parse("f"), f, true);
-            AssertSuccess(parser.Parse("f()"), f(), true);
+            AssertSuccess(await parser.Parse("f"), f, true);
+            AssertSuccess(await parser.Parse("f()"), f(), true);
         }
 
         [Fact]
-        public void TestPostfixChainable()
+        public async Task TestPostfixChainable()
         {
             Func<dynamic> f = () => true;
             Func<Func<dynamic>> g = () => f;
@@ -331,9 +332,9 @@ namespace Pidgin.Tests
                 }
             );
 
-            AssertSuccess(parser.Parse("f"), f, true);
-            AssertSuccess(parser.Parse("f()"), f(), true);
-            AssertSuccess(parser.Parse("g()()"), g()(), true);
+            AssertSuccess(await parser.Parse("f"), f, true);
+            AssertSuccess(await parser.Parse("f()"), f(), true);
+            AssertSuccess(await parser.Parse("g()()"), g()(), true);
         }
     }
 }

@@ -1,4 +1,5 @@
 using Pidgin.Examples.Json;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Pidgin.Tests
@@ -6,11 +7,11 @@ namespace Pidgin.Tests
     public class JsonTest
     {
         [Fact]
-        public void TestJsonObject()
+        public async Task TestJsonObject()
         {
             var input = "[ { \"foo\" : \"bar\" } , [ \"baz\" ] ]";
 
-            var result = JsonParser.Parse(input);
+            var result = await JsonParser.Parse(input);
 
             Assert.Equal("[{\"foo\":\"bar\"},[\"baz\"]]", result.Value.ToString());
         }

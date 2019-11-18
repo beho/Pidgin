@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Threading.Tasks;
 using Pidgin.TokenStreams;
 using Xunit;
 
@@ -7,149 +9,155 @@ namespace Pidgin.Tests
     public class ParseStateTests
     {
         [Fact]
-        public void TestEmptyInput()
+        public async Task TestEmptyInput()
         {
-            var input = "".AsSpan();
-            var state = new ParseState<char>((_, x) => x.IncrementCol(), new SpanTokenStream<char>(ref input));
+            var input = "";
+            var state = new ParseState<char>((_, x) => x.IncrementCol(), ToStream(input));
+            await state.Initialize();
 
             Assert.Equal(new SourcePos(1, 1), state.ComputeSourcePos());
             Assert.False(state.HasCurrent);
         }
 
         [Fact]
-        public void TestAdvance()
+        public async Task TestAdvance()
         {
-            var input = "foo".AsSpan();
-            var state = new ParseState<char>((_, x) => x.IncrementCol(), new SpanTokenStream<char>(ref input));
+            var input = "foo";
+            var state = new ParseState<char>((_, x) => x.IncrementCol(), ToStream(input));
+            await state.Initialize();
 
-            Consume('f', ref state);
-            Consume('o', ref state);
-            Consume('o', ref state);
+            await Consume('f', state);
+            await Consume('o', state);
+            await Consume('o', state);
 
             Assert.False(state.HasCurrent);
         }
 
         [Fact]
-        public void TestDiscardChunk()
+        public async Task TestDiscardChunk()
         {
-            var input = ('f' + new string('o', ChunkSize)).AsSpan();  // Length == ChunkSize + 1
-            var state = new ParseState<char>((_, x) => x.IncrementCol(), new SpanTokenStream<char>(ref input));
+            var input = ('f' + new string('o', ChunkSize));  // Length == ChunkSize + 1
+            var state = new ParseState<char>((_, x) => x.IncrementCol(), ToStream(input));
+            await state.Initialize();
 
-            Consume('f', ref state);
-            Consume(new string('o', ChunkSize), ref state);
+            await Consume('f', state);
+            await Consume(new string('o', ChunkSize), state);
             Assert.False(state.HasCurrent);
             Assert.Equal(new SourcePos(1, input.Length + 1 /* because Col is 1-indexed */), state.ComputeSourcePos());
         }
 
         [Fact]
-        public void TestSaveWholeChunkAligned()
+        public async Task TestSaveWholeChunkAligned()
         {
             // grows buffer on final iteration of loop
             //
             // |----|----|
             // foooo
             // ^----
-            AlignedChunkTest(ChunkSize);
+            await AlignedChunkTest(ChunkSize);
         }
         [Fact]
-        public void TestSaveWholeChunkUnaligned()
+        public async Task TestSaveWholeChunkUnaligned()
         {
             // grows buffer on final iteration of loop
             //
             // |----|----|
             // faoooo
             //  ^----
-            UnalignedChunkTest(ChunkSize);
+            await UnalignedChunkTest(ChunkSize);
         }
         [Fact]
-        public void TestSaveMoreThanWholeChunkAligned()
+        public async Task TestSaveMoreThanWholeChunkAligned()
         {
             // grows buffer on penultimate iteration of loop
             //
             // |----|----|
             // fooooo
             // ^-----
-            AlignedChunkTest(ChunkSize + 1);
+            await AlignedChunkTest(ChunkSize + 1);
         }
         [Fact]
-        public void TestSaveMoreThanWholeChunkUnaligned()
+        public async Task TestSaveMoreThanWholeChunkUnaligned()
         {
             // grows buffer on penultimate iteration of loop
             //
             // |----|----|
             // faoooo
             //  ^----
-            UnalignedChunkTest(ChunkSize + 1);
+            await UnalignedChunkTest(ChunkSize + 1);
         }
         [Fact]
-        public void TestSaveLessThanWholeChunkAligned()
+        public async Task TestSaveLessThanWholeChunkAligned()
         {
             // does not grow buffer
             //
             // |----|----|
             // fooooo
             // ^-----
-            AlignedChunkTest(ChunkSize - 1);
+            await AlignedChunkTest(ChunkSize - 1);
         }
         [Fact]
-        public void TestSaveLessThanWholeChunkUnaligned()
+        public async Task TestSaveLessThanWholeChunkUnaligned()
         {
             // does not grow buffer
             //
             // |----|----|
             // fooooo
             // ^-----
-            UnalignedChunkTest(ChunkSize - 1);
+            await UnalignedChunkTest(ChunkSize - 1);
         }
 
-        private static void AlignedChunkTest(int inputLength)
+        private static async Task AlignedChunkTest(int inputLength)
         {
-            var input = ('f' + new string('o', inputLength - 1)).AsSpan();
-            var state = new ParseState<char>((_, x) => x.IncrementCol(), new SpanTokenStream<char>(ref input));
+            var input = ('f' + new string('o', inputLength - 1));
+            var state = new ParseState<char>((_, x) => x.IncrementCol(), ToStream(input));
+            await state.Initialize();
 
             state.PushBookmark();
 
-            Consume('f', ref state);
-            Consume(new string('o', inputLength - 1), ref state);
+            await Consume('f', state);
+            await Consume(new string('o', inputLength - 1), state);
             Assert.False(state.HasCurrent);
             Assert.Equal(new SourcePos(1, inputLength + 1), state.ComputeSourcePos());
 
             state.Rewind();
             Assert.Equal(new SourcePos(1, 1), state.ComputeSourcePos());
-            Consume('f', ref state);
+            await Consume('f', state);
         }
 
-        private static void UnalignedChunkTest(int inputLength)
+        private static async Task UnalignedChunkTest(int inputLength)
         {
-            var input = ("fa" + new string('o', inputLength - 2)).AsSpan();
-            var state = new ParseState<char>((_, x) => x.IncrementCol(), new SpanTokenStream<char>(ref input));
+            var input = ("fa" + new string('o', inputLength - 2));
+            var state = new ParseState<char>((_, x) => x.IncrementCol(), ToStream(input));
+            await state.Initialize();
 
-            Consume('f', ref state);
+            await Consume('f', state);
 
             state.PushBookmark();
-            Consume('a' + new string('o', inputLength - 2), ref state);
+            await Consume('a' + new string('o', inputLength - 2), state);
             Assert.False(state.HasCurrent);
             Assert.Equal(new SourcePos(1, inputLength + 1), state.ComputeSourcePos());
 
             state.Rewind();
             Assert.Equal(new SourcePos(1, 2), state.ComputeSourcePos());
-            Consume('a', ref state);
+            await Consume('a', state);
         }
 
-        private static void Consume(char expected, ref ParseState<char> state)
+        private static async Task Consume(char expected, ParseState<char> state)
         {
             var oldCol = state.ComputeSourcePos().Col;
             Assert.True(state.HasCurrent);
             Assert.Equal(expected, state.Current);
-            state.Advance();
+            await state.Advance();
             Assert.Equal(oldCol + 1, state.ComputeSourcePos().Col);
         }
 
-        private static void Consume(string expected, ref ParseState<char> state)
+        private static async Task Consume(string expected, ParseState<char> state)
         {
             var oldCol = state.ComputeSourcePos().Col;
-            AssertEqual(expected.AsSpan(), state.LookAhead(expected.Length));
-            state.Advance(expected.Length);
+            var lookAhead = await state.LookAhead(expected.Length);
+            AssertEqual(expected.AsSpan(), lookAhead.Span);
+            await state.Advance(expected.Length);
             Assert.Equal(oldCol + expected.Length, state.ComputeSourcePos().Col);
         }
 
@@ -162,14 +170,9 @@ namespace Pidgin.Tests
             }
         }
 
-        private static int ChunkSize
-        {
-            get
-            {
-                var input = "".AsSpan();
-                return new SpanTokenStream<char>(ref input).ChunkSizeHint;
-            }
-        }
+        private static ITokenStream<char> ToStream(string input)
+            => new ReaderTokenStream(new StringReader(input));
 
+        private static int ChunkSize => ToStream("").ChunkSizeHint;
     }
 }

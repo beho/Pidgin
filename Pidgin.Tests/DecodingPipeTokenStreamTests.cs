@@ -41,7 +41,7 @@ namespace Pidgin.Tests
 
             writer.Complete();
 
-            Result<char, (string Value, SourcePos CurrentPos)> result = Parser.Parse(reader, encoding);
+            Result<char, (string Value, SourcePos CurrentPos)> result = await Parser.Parse(reader, encoding);
 
             Assert.True(result.Success);
             Assert.Equal(s, result.Value.Value);
@@ -84,7 +84,7 @@ namespace Pidgin.Tests
 
             async Task Read()
             {
-                Result<char, (string Value, SourcePos CurrentPos)> result = Parser.Parse(reader, encoding);
+                Result<char, (string Value, SourcePos CurrentPos)> result = await Parser.Parse(reader, encoding);
 
                 Assert.True(result.Success);
                 Assert.Equal(s, result.Value.Value);

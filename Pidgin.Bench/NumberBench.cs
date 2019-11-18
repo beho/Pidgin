@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using Pidgin;
+using System.Threading.Tasks;
 using static Pidgin.Parser;
 using static Pidgin.Parser<char>;
 
@@ -10,9 +11,9 @@ namespace Pidgin.Bench
         private static string _input = int.MaxValue.ToString();
 
         [Benchmark]
-        public int Pidgin()
+        public async ValueTask<int> Pidgin()
         {
-            return Parser.Num.ParseOrThrow(_input);
+            return await Parser.Num.ParseOrThrow(_input);
         }
 
         [Benchmark(Baseline = true)]

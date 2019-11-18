@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -74,10 +73,10 @@ namespace Pidgin
                 _message = message;
             }
 
-            internal sealed override InternalResult<T> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
                 state.BeginExpectedTran();
-                var result = _parser.Parse(ref state);                
+                var result = await _parser.Parse(state);
                 state.EndExpectedTran(!result.Success);
                 if (!result.Success)
                 {

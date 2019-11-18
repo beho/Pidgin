@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace Pidgin
 {
@@ -56,9 +56,9 @@ namespace Pidgin
                 _result = result;
             }
 
-            internal sealed override InternalResult<R> Parse(ref ParseState<TToken> state)
+            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
             {
-                var result = _parser.Parse(ref state);
+                var result = await _parser.Parse(state);
                 if (!result.Success)
                 {
                     // state.Error set by _parser
@@ -66,7 +66,7 @@ namespace Pidgin
                 }
 
                 var nextParser = _func(result.Value);
-                var result2 = nextParser.Parse(ref state);
+                var result2 = await nextParser.Parse(state);
                 if (!result2.Success)
                 {
                     // state.Error set by nextParser

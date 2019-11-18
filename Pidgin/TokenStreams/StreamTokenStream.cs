@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
 {
@@ -13,8 +14,8 @@ namespace Pidgin.TokenStreams
             _input = input;
         }
 
-        public int ReadInto(byte[] buffer, int startIndex, int length)
-            => _input.Read(buffer, startIndex, length);
+        public ValueTask<int> ReadInto(byte[] buffer, int startIndex, int length)
+            => new ValueTask<int>(_input.Read(buffer, startIndex, length));
 
         public void Dispose() { }
     }
