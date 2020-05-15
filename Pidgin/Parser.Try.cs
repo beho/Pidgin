@@ -20,15 +20,16 @@ namespace Pidgin
             }
             return new TryParser<TToken, T>(parser);
         }
+    }
 
-        private sealed class TryParser<TToken, T> : Parser<TToken, T>
+    internal sealed class TryParser<TToken, T> : Parser<TToken, T>
+    {
+        private readonly Parser<TToken, T> _parser;
+
+        public TryParser(Parser<TToken, T> parser)
         {
-            private readonly Parser<TToken, T> _parser;
-
-            public TryParser(Parser<TToken, T> parser)
-            {
-                _parser = parser;
-            }
+            _parser = parser;
+        }
 
             internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
@@ -42,10 +43,9 @@ namespace Pidgin
                     return InternalResult.Failure<T>(false);
                 }
 
-                // discard the buffer
-                state.PopBookmark();
-                return result;
-            }
+            // discard the buffer
+            state.PopBookmark();
+            return result;
         }
     }
 }

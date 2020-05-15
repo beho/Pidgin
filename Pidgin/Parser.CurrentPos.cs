@@ -9,12 +9,12 @@ namespace Pidgin
         /// </summary>
         /// <returns>A parser which returns the current source position</returns>
         public static Parser<TToken, SourcePos> CurrentPos { get; }
-            = new CurrentPosParser();
+            = new CurrentPosParser<TToken>();
+    }
 
-        private sealed class CurrentPosParser : Parser<TToken, SourcePos>
-        {
-            internal override ValueTask<InternalResult<SourcePos>> Parse(ParseState<TToken> state)
-                => new ValueTask<InternalResult<SourcePos>>(InternalResult.Success(state.ComputeSourcePos(), false));
-        }
+    internal sealed class CurrentPosParser<TToken> : Parser<TToken, SourcePos>
+    {
+        internal override ValueTask<InternalResult<SourcePos>> Parse(ParseState<TToken> state)
+            => new ValueTask<InternalResult<SourcePos>>(InternalResult.Success(state.ComputeSourcePos(), false));
     }
 }

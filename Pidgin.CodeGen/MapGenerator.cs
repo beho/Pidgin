@@ -8,12 +8,13 @@ namespace Pidgin.CodeGen
     {
         public static void Generate()
         {
-            File.WriteAllText("Pidgin/Parser.Map.Generated.cs", GenerateClassPart());
+            File.WriteAllText("Pidgin/Parser.Map.Generated.cs", GenerateFile());
         }
 
-        private static string GenerateClassPart()
+        private static string GenerateFile()
         {
-            var methodsAndClasses = Enumerable.Range(1, 8).Select(n => GenerateMethodAndClass(n));
+            var methods = Enumerable.Range(1, 8).Select(n => GenerateMethod(n));
+            var classes = Enumerable.Range(1, 8).Select(n => GenerateClass(n));
 
             return $@"#region GeneratedCode
 using System;
@@ -33,31 +34,26 @@ namespace Pidgin
     //         select func(x1, x2, ..., xn)
     // but this lower-level approach saves on allocations
     public static partial class Parser
-    {{
-        private abstract class MapParserBase<TToken, T> : Parser<TToken, T>
-        {{
-            internal new abstract MapParserBase<TToken, U> Map<U>(Func<T, U> func);
-        }}
-
-        {string.Join(Environment.NewLine, methodsAndClasses)}
+    {{{string.Join(Environment.NewLine, methods)}
     }}
+    internal abstract class MapParserBase<TToken, T> : Parser<TToken, T>
+    {{
+        internal new abstract MapParserBase<TToken, U> Map<U>(Func<T, U> func);
+    }}
+    {string.Join(Environment.NewLine, classes)}
 }}
 #endregion
 ";
         }
 
 
-        private static string GenerateMethodAndClass(int num)
+        private static string GenerateMethod(int num)
         {
             var nums = Enumerable.Range(1, num);
             var parserParams = nums.Select(n => $"Parser<TToken, T{n}> parser{n}");
             var parserFields = nums.Select(n => $"private readonly Parser<TToken, T{n}> _p{n};");
             var parserParamNames = nums.Select(n => $"parser{n}");
-            var parserFieldNames = nums.Select(n => $"_p{n}");
-            var parserFieldAssignments = nums.Select(n => $"_p{n} = parser{n};");
-            var results = nums.Select(n => $"result{n}.Value");
             var types = string.Join(", ", nums.Select(n => "T" + n));
-            var parts = nums.Select(GenerateMethodBodyPart);
             var checkArgsForNull = string.Concat(parserParamNames.Select(x => $@"
             if ({x} == null)
             {{
@@ -68,7 +64,6 @@ namespace Pidgin
                 ? p.Map(func)
                 : new Map{num}Parser<TToken, {types}, R>(func, {string.Join(", ", parserParamNames)})"
                 : $"new Map{num}Parser<TToken, {types}, R>(func, {string.Join(", ", parserParamNames)})";
-            var funcArgNames = nums.Select(n => "x" + n);
 
             var typeParamDocs = nums.Select(n => $"<typeparam name=\"T{n}\">The return type of the {EnglishNumber(n)} parser</typeparam>");
             var paramDocs = nums.Select(n => $"<param name=\"parser{n}\">The {EnglishNumber(n)} parser</param>");
@@ -94,39 +89,58 @@ namespace Pidgin
             }}{checkArgsForNull}
 
             return {mapReturnExpr};
-        }}
-        
-        private sealed class Map{num}Parser<TToken, {types}, R> : MapParserBase<TToken, R>
-        {{
-            private readonly Func<{types}, R> _func;
-            {string.Join($"{Environment.NewLine}            ", parserFields)}
+        }}";
+        }
 
-            public Map{num}Parser(
-                Func<{types}, R> func,
-                {string.Join($",{Environment.NewLine}                ", parserParams)}
-            )
-            {{
-                _func = func;
-                {string.Join($"{Environment.NewLine}                ", parserFieldAssignments)}
-            }}
+
+        private static string GenerateClass(int num)
+        {
+            var nums = Enumerable.Range(1, num);
+            var parserParams = nums.Select(n => $"Parser<TToken, T{n}> parser{n}");
+            var parserFields = nums.Select(n => $"private readonly Parser<TToken, T{n}> _p{n};");
+            var parserParamNames = nums.Select(n => $"parser{n}");
+            var parserFieldNames = nums.Select(n => $"_p{n}");
+            var parserFieldAssignments = nums.Select(n => $"_p{n} = parser{n};");
+            var results = nums.Select(n => $"result{n}.Value");
+            var types = string.Join(", ", nums.Select(n => "T" + n));
+            var parts = nums.Select(GenerateMethodBodyPart);
+            var funcArgNames = nums.Select(n => "x" + n);
+
+            return $@"
+    internal sealed class Map{num}Parser<TToken, {types}, R> : MapParserBase<TToken, R>
+    {{
+        private readonly Func<{types}, R> _func;
+        {string.Join($"{Environment.NewLine}        ", parserFields)}
+
+        public Map{num}Parser(
+            Func<{types}, R> func,
+            {string.Join($",{Environment.NewLine}            ", parserParams)}
+        )
+        {{
+            _func = func;
+            {string.Join($"{Environment.NewLine}            ", parserFieldAssignments)}
+        }}
 
             internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
             {{
                 var consumedInput = false;
 
-                {string.Join(Environment.NewLine, parts)}
+            {string.Join(Environment.NewLine, parts)}
 
-                return InternalResult.Success<R>(_func(
+            return InternalResult.Success<R>(
+                _func(
                     {string.Join($",{Environment.NewLine}                    ", results)}
-                ), consumedInput);
-            }}
+                ),
+                consumedInput
+            );
+        }}
 
-            internal override MapParserBase<TToken, U> Map<U>(Func<R, U> func)
-                => new Map{num}Parser<TToken, {types}, U>(
-                    ({string.Join(", ", funcArgNames)}) => func(_func({string.Join(", ", funcArgNames)})),
-                    {string.Join($",{Environment.NewLine}                    ", parserFieldNames)}
-                );
-        }}";
+        internal override MapParserBase<TToken, U> Map<U>(Func<R, U> func)
+            => new Map{num}Parser<TToken, {types}, U>(
+                ({string.Join(", ", funcArgNames)}) => func(_func({string.Join(", ", funcArgNames)})),
+                {string.Join($",{Environment.NewLine}                ", parserFieldNames)}
+            );
+    }}";
         }
 
         private static string GenerateMethodBodyPart(int num)

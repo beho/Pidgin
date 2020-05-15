@@ -279,6 +279,7 @@ namespace Pidgin.Tests
             }
             {
                 var parser = HexNum;
+                AssertSuccess(await parser.Parse("09"), 0x09, true);
                 AssertSuccess(await parser.Parse("ab"), 0xab, true);
                 AssertSuccess(await parser.Parse("cd"), 0xcd, true);
                 AssertSuccess(await parser.Parse("ef"), 0xef, true);
