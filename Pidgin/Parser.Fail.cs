@@ -18,31 +18,31 @@ namespace Pidgin
             {
                 throw new ArgumentNullException(nameof(message));
             }
-            return new FailParser<T>(message);
+            return new FailParser<TToken, T>(message);
+        }
+    }
+
+    internal sealed class FailParser<TToken, T> : Parser<TToken, T>
+    {
+        private static readonly Expected<TToken> _expected
+            = new Expected<TToken>(ImmutableArray<TToken>.Empty);
+        private readonly string _message;
+
+        public FailParser(string message)
+        {
+            _message = message;
         }
 
-        private sealed class FailParser<T> : Parser<TToken, T>
+        internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
         {
-            private static readonly Expected<TToken> _expected
-                = new Expected<TToken>(ImmutableArray<TToken>.Empty);
-            private readonly string _message;
-
-            public FailParser(string message)
-            {
-                _message = message;
-            }
-
-            internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
-            {
-                state.Error = new InternalError<TToken>(
-                    Maybe.Nothing<TToken>(),
-                    false,
-                    state.Location,
-                    _message
-                );
-                state.AddExpected(_expected);
-                return new ValueTask<InternalResult<T>>(InternalResult.Failure<T>(false));
-            }
+            state.Error = new InternalError<TToken>(
+                Maybe.Nothing<TToken>(),
+                false,
+                state.Location,
+                _message
+            );
+            state.AddExpected(_expected);
+            return new ValueTask<InternalResult<T>>(InternalResult.Failure<T>(false));
         }
     }
 }

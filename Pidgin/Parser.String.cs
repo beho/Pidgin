@@ -36,80 +36,81 @@ namespace Pidgin
             }
             return new CIStringParser(str);
         }
-        private sealed class CIStringParser : Parser<char, string>
+    }
+
+    internal sealed class CIStringParser : Parser<char, string>
+    {
+        private readonly string _value;
+        private Expected<char> _expected;
+        private Expected<char> Expected
         {
-            private readonly string _value;
-            private Expected<char> _expected;
-            private Expected<char> Expected
+            get
             {
-                get
+                if (_expected.InternalTokens.IsDefault)
                 {
-                    if (_expected.InternalTokens.IsDefault)
-                    {
-                        _expected = new Expected<char>(_value.ToImmutableArray());
-                    }
-                    return _expected;
+                    _expected = new Expected<char>(_value.ToImmutableArray());
+                }
+                return _expected;
+            }
+        }
+
+        public CIStringParser(string value)
+        {
+            _value = value;
+        }
+
+        internal sealed override async ValueTask<InternalResult<string>> Parse(ParseState<char> state)
+        {
+            var memory = await state.LookAhead(_value.Length);  // span.Length <= _valueTokens.Length
+
+            int errorPos = Compare(memory.Span);
+
+            if (errorPos != -1)
+            {
+                // strings didn't match
+                await state.Advance(errorPos);
+                state.Error = new InternalError<char>(
+                    Maybe.Just(memory.ValueAt(errorPos)),
+                    false,
+                    state.Location,
+                    null
+                );
+                state.AddExpected(Expected);
+                return InternalResult.Failure<string>(errorPos > 0);
+            }
+
+            if (memory.Length < _value.Length)
+            {
+                // strings matched but reached EOF
+                await state.Advance(memory.Length);
+                state.Error = new InternalError<char>(
+                    Maybe.Nothing<char>(),
+                    true,
+                    state.Location,
+                    null
+                );
+                state.AddExpected(Expected);
+                return InternalResult.Failure<string>(memory.Length > 0);
+            }
+
+            // OK
+            await state.Advance(_value.Length);
+            return InternalResult.Success<string>(memory.ToString(), _value.Length > 0);
+        }
+
+        private int Compare(ReadOnlySpan<char> span)
+        {
+            var errorPos = -1;
+            for (var i = 0; i < span.Length; i++)
+            {
+                if (!char.ToLowerInvariant(span[i]).Equals(char.ToLowerInvariant(_value[i])))
+                {
+                    errorPos = i;
+                    break;
                 }
             }
 
-            public CIStringParser(string value)
-            {
-                _value = value;
-            }
-
-            internal sealed override async ValueTask<InternalResult<string>> Parse(ParseState<char> state)
-            {
-                var memory = await state.LookAhead(_value.Length);  // span.Length <= _valueTokens.Length
-
-                int errorPos = Compare(memory.Span);
-
-                if (errorPos != -1)
-                {
-                    // strings didn't match
-                    await state.Advance(errorPos);
-                    state.Error = new InternalError<char>(
-                        Maybe.Just(memory.ValueAt(errorPos)),
-                        false,
-                        state.Location,
-                        null
-                    );
-                    state.AddExpected(Expected);
-                    return InternalResult.Failure<string>(errorPos > 0);
-                }
-
-                if (memory.Length < _value.Length)
-                {
-                    // strings matched but reached EOF
-                    await state.Advance(memory.Length);
-                    state.Error = new InternalError<char>(
-                        Maybe.Nothing<char>(),
-                        true,
-                        state.Location,
-                        null
-                    );
-                    state.AddExpected(Expected);
-                    return InternalResult.Failure<string>(memory.Length > 0);
-                }
-
-                // OK
-                await state.Advance(_value.Length);
-                return InternalResult.Success<string>(memory.ToString(), _value.Length > 0);
-            }
-
-            private int Compare(ReadOnlySpan<char> span)
-            {
-                var errorPos = -1;
-                for (var i = 0; i < span.Length; i++)
-                {
-                    if (!char.ToLowerInvariant(span[i]).Equals(char.ToLowerInvariant(_value[i])))
-                    {
-                        errorPos = i;
-                        break;
-                    }
-                }
-
-                return errorPos;
-            }
+            return errorPos;
         }
     }
 }

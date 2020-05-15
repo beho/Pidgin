@@ -20,15 +20,16 @@ namespace Pidgin
             }
             return new LookaheadParser<TToken, T>(parser);
         }
+    }
 
-        private class LookaheadParser<TToken, T> : Parser<TToken, T>
+    internal sealed class LookaheadParser<TToken, T> : Parser<TToken, T>
+    {
+        private readonly Parser<TToken, T> _parser;
+
+        public LookaheadParser(Parser<TToken, T> parser)
         {
-            private readonly Parser<TToken, T> _parser;
-
-            public LookaheadParser(Parser<TToken, T> parser)
-            {
-                _parser = parser;
-            }
+            _parser = parser;
+        }
 
             internal override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
             {
@@ -36,14 +37,13 @@ namespace Pidgin
 
                 var result = await _parser.Parse(state);
 
-                if (result.Success)
-                {
-                    state.Rewind();
-                    return InternalResult.Success<T>(result.Value, false);
-                }
-                state.PopBookmark();
-                return result;
+            if (result.Success)
+            {
+                state.Rewind();
+                return InternalResult.Success<T>(result.Value, false);
             }
+            state.PopBookmark();
+            return result;
         }
     }
 }

@@ -20,15 +20,16 @@ namespace Pidgin
             }
             return new NegatedParser<TToken, T>(parser);
         }
+    }
+        
+    internal sealed class NegatedParser<TToken, T> : Parser<TToken, Unit>
+    {
+        private readonly Parser<TToken, T> _parser;
 
-        private sealed class NegatedParser<TToken, T> : Parser<TToken, Unit>
+        public NegatedParser(Parser<TToken, T> parser)
         {
-            private readonly Parser<TToken, T> _parser;
-
-            public NegatedParser(Parser<TToken, T> parser)
-            {
-                _parser = parser;
-            }
+            _parser = parser;
+        }
 
             internal sealed override async ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state)
             {
@@ -51,11 +52,10 @@ namespace Pidgin
                     return InternalResult.Failure<Unit>(result.ConsumedInput);
                 }
 
-                return InternalResult.Success(
-                    Unit.Value,
-                    result.ConsumedInput
-                );
-            }
+            return InternalResult.Success(
+                Unit.Value,
+                result.ConsumedInput
+            );
         }
     }
 }

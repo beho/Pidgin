@@ -31,28 +31,28 @@ namespace Pidgin
         /// <returns>A parser that discards a sequence of whitespace characters</returns>
         public static Parser<char, Unit> SkipWhitespaces { get; }
             = new SkipWhitespacesParser();
+    }
 
-        private class SkipWhitespacesParser : Parser<char, Unit>
+    internal class SkipWhitespacesParser : Parser<char, Unit>
+    {
+        internal override async ValueTask<InternalResult<Unit>> Parse(ParseState<char> state)
         {
-            internal override async ValueTask<InternalResult<Unit>> Parse(ParseState<char> state)
+            var startingLoc = state.Location;
+            var chunk = await state.LookAhead(32);
+            while (chunk.Length > 0)
             {
-                var startingLoc = state.Location;
-                var chunk = await state.LookAhead(32);
-                while (chunk.Length > 0)
+                for (var i = 0; i < chunk.Length; i++)
                 {
-                    for (var i = 0; i < chunk.Length; i++)
+                    if (!char.IsWhiteSpace(chunk.ValueAt(i)))
                     {
-                        if (!char.IsWhiteSpace(chunk.ValueAt(i))) // TODO optimize with slicing/figure out how to use span
-                        {
-                            await state.Advance(i);
-                            return InternalResult.Success(Unit.Value, state.Location > startingLoc);
-                        }
+                        await state.Advance(i);
+                        return InternalResult.Success(Unit.Value, state.Location > startingLoc);
                     }
-                    await state.Advance(chunk.Length);
-                    chunk = await state.LookAhead(32);
                 }
-                return InternalResult.Success(Unit.Value, state.Location > startingLoc);
+                await state.Advance(chunk.Length);
+                chunk = await state.LookAhead(32);
             }
+            return InternalResult.Success(Unit.Value, state.Location > startingLoc);
         }
     }
 }
