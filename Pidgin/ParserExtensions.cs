@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pidgin
@@ -124,6 +125,13 @@ namespace Pidgin
         public static ValueTask<Result<char, T>> Parse<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
         {
             return DoParse(parser, new DecodingPipeTokenStream(reader, encoding.GetDecoder()), calculatePos ?? ByteDecodingPosCalculator);
+
+            unsafe SourcePos ByteDecodingPosCalculator(char c, SourcePos pos) => new SourcePos(1, pos.Col + encoding.GetByteCount(&c, 1));
+        }
+
+        public static ValueTask<Result<char, T>> Parse<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, CancellationToken cancellationToken, Func<char, SourcePos, SourcePos> calculatePos = null)
+        {
+            return DoParse(parser, new DecodingPipeTokenStream(reader, encoding.GetDecoder(), cancellationToken), calculatePos ?? ByteDecodingPosCalculator);
 
             unsafe SourcePos ByteDecodingPosCalculator(char c, SourcePos pos) => new SourcePos(1, pos.Col + encoding.GetByteCount(&c, 1));
         }
@@ -249,6 +257,9 @@ namespace Pidgin
 
         public static async ValueTask<T> ParseOrThrow<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, Func<char, SourcePos, SourcePos> calculatePos = null)
             => GetValueOrThrow(await parser.Parse(reader, encoding, calculatePos));
+
+        public static async ValueTask<T> ParseOrThrow<T>(this Parser<char, T> parser, PipeReader reader, Encoding encoding, CancellationToken cancellationToken, Func<char, SourcePos, SourcePos> calculatePos = null)
+            => GetValueOrThrow(await parser.Parse(reader, encoding, cancellationToken, calculatePos));
 
 
         private static T GetValueOrThrow<TToken, T>(Result<TToken, T> result)

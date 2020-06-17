@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pidgin.TokenStreams
@@ -21,6 +22,8 @@ namespace Pidgin.TokenStreams
         private ReadOnlyMemory<byte> _currentSegment;
         private SequencePosition _currentSegmentStart;
 
+        private readonly CancellationToken _cancellationToken;
+
         private bool IsCompleted
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,10 +37,11 @@ namespace Pidgin.TokenStreams
         }
 
 
-        public DecodingPipeTokenStream(PipeReader reader, Decoder decoder)
+        public DecodingPipeTokenStream(PipeReader reader, Decoder decoder, CancellationToken cancellationToken = default)
         {
             _reader = reader;
             _decoder = decoder;
+            _cancellationToken = cancellationToken;
         }
 
 
@@ -94,7 +98,7 @@ namespace Pidgin.TokenStreams
         private async ValueTask Read(bool initialRead = false)
         {
             SequencePosition examined = _currentSequence.End;
-            ReadResult result = await _reader.ReadAsync();
+            ReadResult result = await _reader.ReadAsync(_cancellationToken);
 
             _currentSequence = result.Buffer;
             if (result.IsCompleted)
