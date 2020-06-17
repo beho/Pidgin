@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using static Pidgin.Parser;
@@ -89,6 +90,53 @@ namespace Pidgin.Tests
                 Assert.True(result.Success);
                 Assert.Equal(s, result.Value.Value);
                 Assert.Equal(encoding.GetByteCount(s), result.Value.CurrentPos.Col - 1);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(PipeTestArgs))]
+        public async Task CancellingTest(int writeSize, int minimumSegmentSize)
+        {
+            Encoding encoding = Encoding.UTF8;
+
+            // ž is two bytes - it will be split in half due to odd segmentSize
+            string s = CreateString(stringLength, 'ž');
+            ReadOnlyMemory<byte> m = encoding.GetBytes(s);
+
+            var pipe = new Pipe(new PipeOptions(minimumSegmentSize: minimumSegmentSize));
+            PipeWriter writer = pipe.Writer;
+            PipeReader reader = pipe.Reader;
+
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+
+            await Task.WhenAll(Write(), Read());
+
+            async Task Write()
+            {
+                int rounds = m.Length / writeSize + (m.Length % writeSize > 0 ? 1 : 0);
+
+                for (int i = 0; i < rounds; i++)
+                {
+                    if (i == rounds - 1)
+                    {
+                        tokenSource.Cancel();
+                    }
+
+                    int sliceLength = Math.Min(m.Length, writeSize);
+
+                    await writer.WriteAsync(m.Slice(0, sliceLength));
+
+                    m = m.Slice(sliceLength);
+
+                    await Task.Delay(30);
+                }
+
+                writer.Complete();
+            }
+
+            async Task Read()
+            {
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await Parser.Parse(reader, encoding, tokenSource.Token));
             }
         }
 
