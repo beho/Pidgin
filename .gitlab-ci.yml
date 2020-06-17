@@ -1,4 +1,4 @@
-image: mcr.microsoft.com/dotnet/core/sdk:3.0-alpine
+image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
 
 stages:
     - build
@@ -16,7 +16,7 @@ build:
     before_script:
         - cd Pidgin
     script:
-        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
+        - dotnet build --disable-parallel -f netcoreapp3.1 -c release
 
 test:
     stage: test
@@ -39,7 +39,7 @@ pack:
         - master
     before_script:
         - cd Pidgin       
-        - dotnet build --disable-parallel -f netcoreapp3.0 -c release
+        - dotnet build --disable-parallel -f netcoreapp3.1 -c release
     script:
         - dotnet pack -c release
         - dotnet nuget push -k $NUGET_API_KEY  -s $NUGET_URL  ./bin/release/*.nupkg
