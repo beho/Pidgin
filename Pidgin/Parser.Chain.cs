@@ -27,9 +27,9 @@ namespace Pidgin
             _factory = factory;
         }
 
-        internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state)
+        internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
-            var result1 = await _parser.Parse(state);
+            var result1 = await _parser.Parse(state, expecteds);
             if (!result1.Success)
             {
                 // state.Error set by _parser
@@ -40,23 +40,25 @@ namespace Pidgin
             chainer.Apply(result1.Value);
             var consumedInput = result1.ConsumedInput;
 
-            state.BeginExpectedTran();
-            var result = await _parser.Parse(state);
+            var childExpecteds = new ExpectedCollector<TToken>();
+            var result = await _parser.Parse(state, childExpecteds);
             while (result.Success)
             {
-                state.EndExpectedTran(false);
+                childExpecteds.Clear();
                 if (!result.ConsumedInput)
                 {
+                    childExpecteds.Dispose();
                     chainer.OnError();
                     throw new InvalidOperationException("Many() used with a parser which consumed no input");
                 }
                 consumedInput = true;
                 chainer.Apply(result.Value);
 
-                state.BeginExpectedTran();
-                result = await _parser.Parse(state);
+                result = await _parser.Parse(state, childExpecteds);
             }
-            state.EndExpectedTran(result.ConsumedInput);
+            expecteds.AddIf(ref childExpecteds, result.ConsumedInput);
+            childExpecteds.Dispose();
+
             if (result.ConsumedInput)  // the most recent parser failed after consuming input
             {
                 // state.Error set by _parser

@@ -144,12 +144,14 @@ namespace Pidgin
         }
         private static async ValueTask<Result<TToken, T>> DoParse<TToken, T>(Parser<TToken, T> parser, ParseState<TToken> state)
         {
-            var internalResult = await parser.Parse(state);
+            var expecteds = new ExpectedCollector<TToken>();
+            var internalResult = await parser.Parse(state, expecteds);
 
             var result = internalResult.Success
                 ? new Result<TToken, T>(internalResult.ConsumedInput, internalResult.Value)
-                : new Result<TToken, T>(internalResult.ConsumedInput, state.BuildError());
+                : new Result<TToken, T>(internalResult.ConsumedInput, state.BuildError(ref expecteds));
 
+            expecteds.Dispose();
             state.Dispose();  // ensure we return the state's buffers to the buffer pool
 
             return result;

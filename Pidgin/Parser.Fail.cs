@@ -33,7 +33,7 @@ namespace Pidgin
             _message = message;
         }
 
-        internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             state.Error = new InternalError<TToken>(
                 Maybe.Nothing<TToken>(),
@@ -41,7 +41,8 @@ namespace Pidgin
                 state.Location,
                 _message
             );
-            state.AddExpected(_expected);
+
+            expecteds.Add(_expected);
             return new ValueTask<InternalResult<T>>(InternalResult.Failure<T>(false));
         }
     }

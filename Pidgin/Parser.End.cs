@@ -13,7 +13,7 @@ namespace Pidgin
 
     internal sealed class EndParser<TToken> : Parser<TToken, Unit>
     {
-        internal sealed override ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state)
+        internal sealed override ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             if (state.HasCurrent)
             {
@@ -23,7 +23,8 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(new Expected<TToken>());
+
+                expecteds.Add(new Expected<TToken>());
                 return new ValueTask<InternalResult<Unit>>(InternalResult.Failure<Unit>(false));
             }
             return new ValueTask<InternalResult<Unit>>(InternalResult.Success(Unit.Value, false));

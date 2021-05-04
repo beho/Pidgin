@@ -121,9 +121,9 @@ namespace Pidgin
             {string.Join($"{Environment.NewLine}            ", parserFieldAssignments)}
         }}
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {{
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {{
+            var consumedInput = false;
 
             {string.Join(Environment.NewLine, parts)}
 
@@ -145,12 +145,12 @@ namespace Pidgin
 
         private static string GenerateMethodBodyPart(int num)
             => $@"
-                var result{num} = await _p{num}.Parse(state);
-                consumedInput = consumedInput || result{num}.ConsumedInput;
-                if (!result{num}.Success)
-                {{
-                    return InternalResult.Failure<R>(consumedInput);
-                }}";
+            var result{num} = await _p{num}.Parse(state, expecteds);
+            consumedInput = consumedInput || result{num}.ConsumedInput;
+            if (!result{num}.Success)
+            {{
+                return InternalResult.Failure<R>(consumedInput);
+            }}";
         
         private static string EnglishNumber(int num)
         {

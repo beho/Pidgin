@@ -35,7 +35,7 @@ namespace Pidgin
 
     internal class SkipWhitespacesParser : Parser<char, Unit>
     {
-        internal override async ValueTask<InternalResult<Unit>> Parse(ParseState<char> state)
+        internal override async ValueTask<InternalResult<Unit>> Parse(ParseState<char> state, ExpectedCollector<char> expecteds)
         {
             var startingLoc = state.Location;
             var chunk = await state.LookAhead(32);

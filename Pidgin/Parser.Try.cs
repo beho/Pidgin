@@ -31,17 +31,17 @@ namespace Pidgin
             _parser = parser;
         }
 
-            internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            // start buffering the input
+            state.PushBookmark();
+            var result = await _parser.Parse(state, expecteds);
+            if (!result.Success)
             {
-                // start buffering the input
-                state.PushBookmark();
-                var result = await _parser.Parse(state);
-                if (!result.Success)
-                {
-                    // return to the start of the buffer and discard the bookmark
-                    state.Rewind();
-                    return InternalResult.Failure<T>(false);
-                }
+                // return to the start of the buffer and discard the bookmark
+                state.Rewind();
+                return InternalResult.Failure<T>(false);
+            }
 
             // discard the buffer
             state.PopBookmark();

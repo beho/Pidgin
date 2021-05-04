@@ -52,7 +52,7 @@ namespace Pidgin
             _token = token;
         }
 
-        internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             if (!state.HasCurrent)
             {
@@ -62,7 +62,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(Expected);
+                expecteds.Add(Expected);
                 return InternalResult.Failure<TToken>(false);
             }
             var token = state.Current;
@@ -74,7 +74,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(Expected);
+                expecteds.Add(Expected);
                 return InternalResult.Failure<TToken>(false);
             }
             await state.Advance();
@@ -91,7 +91,7 @@ namespace Pidgin
             _predicate = predicate;
         }
 
-        internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<TToken>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             if (!state.HasCurrent)
             {

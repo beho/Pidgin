@@ -32,6 +32,6 @@ namespace Pidgin
         // Why pass the error by reference?
         // I previously passed Result around directly, which has an Error property,
         // but copying it around turned out to be too expensive because ParseError is a large struct
-        internal abstract ValueTask<InternalResult<T>> Parse(ParseState<TToken> state);
+        internal abstract ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds);
     }
 }

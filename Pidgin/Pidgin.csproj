@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>2.3.0</VersionPrefix>
+    <VersionPrefix>2.5.0</VersionPrefix>
     <VersionSuffix>marta.async.8</VersionSuffix>
 
     <Authors>benjamin.hodgson</Authors>
@@ -17,6 +17,9 @@
     <LangVersion>8.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+    
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\Pidgin.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(APPVEYOR)' == 'True'">

@@ -32,23 +32,21 @@ namespace Pidgin
         }
 
         // see comment about expecteds in ParseState.Error.cs
-        internal override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
-            state.BeginExpectedTran();
-            var result = await _parser.Parse(state);
+            var childExpecteds = new ExpectedCollector<TToken>();
+            var result = await _parser.Parse(state, childExpecteds);
             if (result.Success)
             {
-                state.EndExpectedTran(false);
+                childExpecteds.Dispose();
                 return result;
             }
-            var parserExpecteds = state.ExpectedTranState();
-            state.EndExpectedTran(false);
 
-            var recoverParser = _errorHandler(state.BuildError(parserExpecteds.AsEnumerable()));
+            var recoverParser = _errorHandler(state.BuildError(ref childExpecteds));
+            
+            childExpecteds.Dispose();
 
-            parserExpecteds.Dispose(clearArray: true);
-
-            return await recoverParser.Parse(state);
+            return await recoverParser.Parse(state, expecteds);
         }
     }
 }

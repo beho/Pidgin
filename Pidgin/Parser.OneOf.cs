@@ -125,7 +125,7 @@ namespace Pidgin
         }
 
         // see comment about expecteds in ParseState.Error.cs
-        internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             var firstTime = true;
             var err = new InternalError<TToken>(
@@ -134,16 +134,17 @@ namespace Pidgin
                 state.Location,
                 "OneOf had no arguments"
             );
-            state.BeginExpectedTran();
+
+            var childExpecteds = new ExpectedCollector<TToken>();  // the expecteds for all loop iterations
+            var grandchildExpecteds = new ExpectedCollector<TToken>();  // the expecteds for the current loop iteration
             foreach (var p in _parsers)
             {
-                state.BeginExpectedTran();
-                var thisResult = await p.Parse(state);
+                var thisResult = await p.Parse(state, grandchildExpecteds);
                 if (thisResult.Success)
                 {
                     // throw out all expecteds
-                    state.EndExpectedTran(false);
-                    state.EndExpectedTran(false);
+                    grandchildExpecteds.Dispose();
+                    childExpecteds.Dispose();
                     return thisResult;
                 }
 
@@ -153,15 +154,14 @@ namespace Pidgin
                 if (thisResult.ConsumedInput)
                 {
                     // throw out all expecteds except this one
-                    var expected = state.ExpectedTranState();
-                    state.EndExpectedTran(false);
-                    state.EndExpectedTran(false);
-                    state.AddExpected(expected.AsSpan());
-                    expected.Dispose(clearArray: true);
+                    expecteds.Add(ref grandchildExpecteds);
+                    childExpecteds.Dispose();
+                    grandchildExpecteds.Dispose();
                     return thisResult;
                 }
 
-                state.EndExpectedTran(true);
+                childExpecteds.Add(ref grandchildExpecteds);
+                grandchildExpecteds.Clear();
                 // choose the longest match, preferring the left-most error in a tie,
                 // except the first time (avoid returning "OneOf had no arguments").
                 if (firstTime || state.Error.ErrorLocation > err.ErrorLocation)
@@ -171,7 +171,9 @@ namespace Pidgin
                 firstTime = false;
             }
             state.Error = err;
-            state.EndExpectedTran(true);
+            expecteds.Add(ref childExpecteds);
+            childExpecteds.Dispose();
+            grandchildExpecteds.Dispose();
             return InternalResult.Failure<T>(false);
         }
 

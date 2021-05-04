@@ -74,15 +74,19 @@ namespace Pidgin
             _message = message;
         }
 
-            internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var childExpecteds = new ExpectedCollector<TToken>();
+
+            var result = await _parser.Parse(state, childExpecteds);
+
+            expecteds.AddIf(ref childExpecteds, result.Success);
+            childExpecteds.Dispose();
+
+            if (!result.Success)
             {
-                state.BeginExpectedTran();
-                var result = await _parser.Parse(state);
-                state.EndExpectedTran(!result.Success);
-                if (!result.Success)
-                {
-                    return result;
-                }
+                return result;
+            }
 
             var val = result.Value;
             if (!_predicate(val))
@@ -93,7 +97,7 @@ namespace Pidgin
                     state.Location,
                     _message(val)
                 );
-                state.AddExpected(_expected);
+                expecteds.Add(_expected);
                 return InternalResult.Failure<T>(result.ConsumedInput);
             }
             return result;

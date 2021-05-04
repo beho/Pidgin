@@ -5,12 +5,9 @@ namespace Pidgin.Bench
 {
     public class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
-            //var b = new JsonBench();
-            //b.Setup();
-            //await b.DeepJson_Pidgin();
         }
     }
 }

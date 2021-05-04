@@ -66,15 +66,15 @@ namespace Pidgin
             _count = count;
         }
 
-            internal override async ValueTask<InternalResult<string>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
-                var builder = new InplaceStringBuilder(_count);
+        internal override async ValueTask<InternalResult<string>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
+            var builder = new InplaceStringBuilder(_count);
 
-                for (var _ = 0; _ < _count; _++)
-                {
-                    var result = await _parser.Parse(state);
-                    consumedInput = consumedInput || result.ConsumedInput;
+            for (var _ = 0; _ < _count; _++)
+            {
+                var result = await _parser.Parse(state, expecteds);
+                consumedInput = consumedInput || result.ConsumedInput;
 
                 if (!result.Success)
                 {

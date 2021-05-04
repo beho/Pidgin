@@ -57,9 +57,9 @@ namespace Pidgin
             _result = result;
         }
 
-        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
-            var result = await _parser.Parse(state);
+            var result = await _parser.Parse(state, expecteds);
             if (!result.Success)
             {
                 // state.Error set by _parser
@@ -67,7 +67,7 @@ namespace Pidgin
             }
 
             var nextParser = _func(result.Value);
-            var result2 = await nextParser.Parse(state);
+            var result2 = await nextParser.Parse(state, expecteds);
             if (!result2.Success)
             {
                 // state.Error set by nextParser

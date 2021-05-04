@@ -178,7 +178,7 @@ namespace Pidgin.Tests
         {
             public AParser() { }
 
-            internal override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+            internal override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
             {
                 throw new NotImplementedException();
             }

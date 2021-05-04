@@ -31,26 +31,27 @@ namespace Pidgin
             _parser = parser;
         }
 
-            internal sealed override async ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state)
-            {
-                var startingLocation = state.Location;
-                var token = state.HasCurrent ? Maybe.Just(state.Current) : Maybe.Nothing<TToken>();
+        internal sealed override async ValueTask<InternalResult<Unit>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var startingLocation = state.Location;
+            var token = state.HasCurrent ? Maybe.Just(state.Current) : Maybe.Nothing<TToken>();
 
-                state.PushBookmark();  // make sure we don't throw out the buffer, we may need it to compute a SourcePos
-                state.BeginExpectedTran();
-                var result = await _parser.Parse(state);
-                state.EndExpectedTran(false);
-                state.PopBookmark();
-                if (result.Success)
-                {
-                    state.Error = new InternalError<TToken>(
-                        token,
-                        false,
-                        startingLocation,
-                        null
-                    );
-                    return InternalResult.Failure<Unit>(result.ConsumedInput);
-                }
+            state.PushBookmark();  // make sure we don't throw out the buffer, we may need it to compute a SourcePos
+            var childExpecteds = new ExpectedCollector<TToken>(true);
+            var result = await _parser.Parse(state, childExpecteds);
+            childExpecteds.Dispose();
+            state.PopBookmark();
+            
+            if (result.Success)
+            {
+                state.Error = new InternalError<TToken>(
+                    token,
+                    false,
+                    startingLocation,
+                    null
+                );
+                return InternalResult.Failure<Unit>(result.ConsumedInput);
+            }
 
             return InternalResult.Success(
                 Unit.Value,

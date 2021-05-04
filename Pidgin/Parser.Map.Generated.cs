@@ -434,17 +434,17 @@ namespace Pidgin
             _p1 = parser1;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -478,24 +478,24 @@ namespace Pidgin
             _p2 = parser2;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -534,31 +534,31 @@ namespace Pidgin
             _p3 = parser3;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -602,38 +602,38 @@ namespace Pidgin
             _p4 = parser4;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result4 = await _p4.Parse(state);
-                consumedInput = consumedInput || result4.ConsumedInput;
-                if (!result4.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result4 = await _p4.Parse(state, expecteds);
+            consumedInput = consumedInput || result4.ConsumedInput;
+            if (!result4.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -682,45 +682,45 @@ namespace Pidgin
             _p5 = parser5;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result4 = await _p4.Parse(state);
-                consumedInput = consumedInput || result4.ConsumedInput;
-                if (!result4.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result4 = await _p4.Parse(state, expecteds);
+            consumedInput = consumedInput || result4.ConsumedInput;
+            if (!result4.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result5 = await _p5.Parse(state);
-                consumedInput = consumedInput || result5.ConsumedInput;
-                if (!result5.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result5 = await _p5.Parse(state, expecteds);
+            consumedInput = consumedInput || result5.ConsumedInput;
+            if (!result5.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -774,52 +774,52 @@ namespace Pidgin
             _p6 = parser6;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result4 = await _p4.Parse(state);
-                consumedInput = consumedInput || result4.ConsumedInput;
-                if (!result4.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result4 = await _p4.Parse(state, expecteds);
+            consumedInput = consumedInput || result4.ConsumedInput;
+            if (!result4.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result5 = await _p5.Parse(state);
-                consumedInput = consumedInput || result5.ConsumedInput;
-                if (!result5.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result5 = await _p5.Parse(state, expecteds);
+            consumedInput = consumedInput || result5.ConsumedInput;
+            if (!result5.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result6 = await _p6.Parse(state);
-                consumedInput = consumedInput || result6.ConsumedInput;
-                if (!result6.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result6 = await _p6.Parse(state, expecteds);
+            consumedInput = consumedInput || result6.ConsumedInput;
+            if (!result6.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -878,59 +878,59 @@ namespace Pidgin
             _p7 = parser7;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result4 = await _p4.Parse(state);
-                consumedInput = consumedInput || result4.ConsumedInput;
-                if (!result4.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result4 = await _p4.Parse(state, expecteds);
+            consumedInput = consumedInput || result4.ConsumedInput;
+            if (!result4.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result5 = await _p5.Parse(state);
-                consumedInput = consumedInput || result5.ConsumedInput;
-                if (!result5.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result5 = await _p5.Parse(state, expecteds);
+            consumedInput = consumedInput || result5.ConsumedInput;
+            if (!result5.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result6 = await _p6.Parse(state);
-                consumedInput = consumedInput || result6.ConsumedInput;
-                if (!result6.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result6 = await _p6.Parse(state, expecteds);
+            consumedInput = consumedInput || result6.ConsumedInput;
+            if (!result6.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result7 = await _p7.Parse(state);
-                consumedInput = consumedInput || result7.ConsumedInput;
-                if (!result7.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result7 = await _p7.Parse(state, expecteds);
+            consumedInput = consumedInput || result7.ConsumedInput;
+            if (!result7.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(
@@ -994,66 +994,66 @@ namespace Pidgin
             _p8 = parser8;
         }
 
-            internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state)
-            {
-                var consumedInput = false;
+        internal sealed override async ValueTask<InternalResult<R>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            var consumedInput = false;
 
             
-                var result1 = await _p1.Parse(state);
-                consumedInput = consumedInput || result1.ConsumedInput;
-                if (!result1.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result1 = await _p1.Parse(state, expecteds);
+            consumedInput = consumedInput || result1.ConsumedInput;
+            if (!result1.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result2 = await _p2.Parse(state);
-                consumedInput = consumedInput || result2.ConsumedInput;
-                if (!result2.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result2 = await _p2.Parse(state, expecteds);
+            consumedInput = consumedInput || result2.ConsumedInput;
+            if (!result2.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result3 = await _p3.Parse(state);
-                consumedInput = consumedInput || result3.ConsumedInput;
-                if (!result3.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result3 = await _p3.Parse(state, expecteds);
+            consumedInput = consumedInput || result3.ConsumedInput;
+            if (!result3.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result4 = await _p4.Parse(state);
-                consumedInput = consumedInput || result4.ConsumedInput;
-                if (!result4.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result4 = await _p4.Parse(state, expecteds);
+            consumedInput = consumedInput || result4.ConsumedInput;
+            if (!result4.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result5 = await _p5.Parse(state);
-                consumedInput = consumedInput || result5.ConsumedInput;
-                if (!result5.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result5 = await _p5.Parse(state, expecteds);
+            consumedInput = consumedInput || result5.ConsumedInput;
+            if (!result5.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result6 = await _p6.Parse(state);
-                consumedInput = consumedInput || result6.ConsumedInput;
-                if (!result6.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result6 = await _p6.Parse(state, expecteds);
+            consumedInput = consumedInput || result6.ConsumedInput;
+            if (!result6.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result7 = await _p7.Parse(state);
-                consumedInput = consumedInput || result7.ConsumedInput;
-                if (!result7.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result7 = await _p7.Parse(state, expecteds);
+            consumedInput = consumedInput || result7.ConsumedInput;
+            if (!result7.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
-                var result8 = await _p8.Parse(state);
-                consumedInput = consumedInput || result8.ConsumedInput;
-                if (!result8.Success)
-                {
-                    return InternalResult.Failure<R>(consumedInput);
-                }
+            var result8 = await _p8.Parse(state, expecteds);
+            consumedInput = consumedInput || result8.ConsumedInput;
+            if (!result8.Success)
+            {
+                return InternalResult.Failure<R>(consumedInput);
+            }
 
             return InternalResult.Success<R>(
                 _func(

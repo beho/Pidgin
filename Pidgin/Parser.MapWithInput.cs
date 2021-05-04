@@ -11,6 +11,8 @@ namespace Pidgin
         /// The <see cref="ReadOnlySpan{TToken}"/> represents the sequence of input tokens which were consumed by the parser.
         /// 
         /// This allows you to write "pattern"-style parsers which match a sequence of tokens and return a view of the part of the input stream which they matched.
+        /// 
+        /// This function is an alternative name for <see cref="Slice"/>.
         /// </summary>
         /// <param name="selector">
         /// A selector function which computes a result of type <typeparamref name="U"/>.
@@ -40,12 +42,12 @@ namespace Pidgin
             _selector = selector;
         }
 
-        internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state)
+        internal override async ValueTask<InternalResult<U>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             var start = state.Location;
 
             state.PushBookmark();  // don't discard input buffer
-            var result = await _parser.Parse(state);
+            var result = await _parser.Parse(state, expecteds);
 
 
             if (!result.Success)

@@ -25,7 +25,9 @@ namespace Pidgin
         private int _bufferStartLocation;  // how many tokens had been consumed up to the start of the buffer?
         private int _currentIndex;
         private int _bufferedCount;
-        private SourcePos _bufferStartSourcePos;
+
+        private int _lastSourcePosLocation;
+        private SourcePos _lastSourcePos;
 
         // a monotonic stack of locations.
         // I know you'll forget this, so: you can't make this into a stack of _currentIndexes,
@@ -44,14 +46,14 @@ namespace Pidgin
             _bufferStartLocation = 0;
             _currentIndex = 0;
             _bufferedCount = memory.Length;
-            _bufferStartSourcePos = new SourcePos(1, 1);
+
+            _lastSourcePosLocation = 0;
+            _lastSourcePos = new SourcePos(1,1);
 
             _eof = default;
             _unexpected = default;
             _errorLocation = default;
             _message = default;
-            _expecteds = new PooledList<Expected<TToken>>();
-            _expectedBookmarks = new PooledList<int>();
         }
 
         public ParseState(Func<TToken, SourcePos, SourcePos> posCalculator, ITokenStream<TToken> stream)
@@ -66,14 +68,14 @@ namespace Pidgin
             _bufferStartLocation = 0;
             _currentIndex = 0;
             _bufferedCount = 0;
-            _bufferStartSourcePos = new SourcePos(1, 1);
+
+            _lastSourcePosLocation = 0;
+            _lastSourcePos = new SourcePos(1,1);
 
             _eof = default;
             _unexpected = default;
             _errorLocation = default;
             _message = default;
-            _expecteds = new PooledList<Expected<TToken>>();
-            _expectedBookmarks = new PooledList<int>();
 
             //Buffer(0);
         }
@@ -159,8 +161,8 @@ namespace Pidgin
                     : 0;
                 var keepFrom = _currentIndex - keepSeenLength;
                 var keepLength = _bufferedCount - keepFrom;
-                var amountToRead = Math.Max(_bufferChunkSize, readAheadTo - keepFrom);
-                var newBufferLength = _bufferedCount + amountToRead;
+                var amountToRead = Math.Max(_bufferChunkSize, readAheadTo - _bufferedCount);
+                var newBufferLength = keepLength + amountToRead;
 
                 //                  _currentIndex
                 //                        |
@@ -176,10 +178,7 @@ namespace Pidgin
                 // newBufferLength |------------------|
 
 
-                for (var i = 0; i < keepFrom; i++)
-                {
-                    _bufferStartSourcePos = _posCalculator(_buffer![i], _bufferStartSourcePos);
-                }
+                UpdateLastSourcePos();
 
                 if (newBufferLength > _buffer!.Length)
                 {
@@ -231,7 +230,20 @@ namespace Pidgin
         }
 
         public SourcePos ComputeSourcePos()
-            => ComputeSourcePosAt(Location);
+        {
+            UpdateLastSourcePos();
+            return ComputeSourcePosAt(Location);
+        }
+
+        private void UpdateLastSourcePos()
+        {
+            var location = _bookmarks.Count > 0
+                ? _bookmarks[0]
+                : Location;
+
+            _lastSourcePos = ComputeSourcePosAt(location);
+            _lastSourcePosLocation = location;
+        }
 
         private SourcePos ComputeSourcePosAt(int location)
         {
@@ -244,10 +256,11 @@ namespace Pidgin
                 throw new ArgumentOutOfRangeException(nameof(location), location, "Tried to compute a SourcePos from too far in the future. Please report this as a bug in Pidgin!");
             }
 
-            var pos = _bufferStartSourcePos;
-            for (var i = 0; i < location - _bufferStartLocation; i++)
+            var pos = _lastSourcePos;
+            var span = _memory.Span;
+            for (var i = _lastSourcePosLocation - _bufferStartLocation; i < location - _bufferStartLocation; i++)
             {
-                pos = _posCalculator(_memory.Span[i], pos);
+                pos = _posCalculator(span[i], pos);
             }
             return pos;
         }
@@ -261,8 +274,6 @@ namespace Pidgin
             }
             _stream?.Dispose();
             _bookmarks.Clear();
-            _expecteds.Clear();
-            _expectedBookmarks.Clear();
         }
     }
 }

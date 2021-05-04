@@ -116,34 +116,35 @@ namespace Pidgin
             _remainderParser = separator.Then(parser);
         }
 
-        internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state)
+        internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
-            var result = await _parser.Parse(state);
+            var result = await _parser.Parse(state, expecteds);
             if (!result.Success)
             {
                 // state.Error set by _parser
                 return InternalResult.Failure<IEnumerable<T>>(result.ConsumedInput);
             }
-            return await Rest(_remainderParser, state, new List<T> { result.Value }, result.ConsumedInput);
+            return await Rest(_remainderParser, state, expecteds, new List<T> { result.Value }, result.ConsumedInput);
         }
 
-        private async ValueTask<InternalResult<IEnumerable<T>>> Rest(Parser<TToken, T> parser, ParseState<TToken> state, List<T> ts, bool consumedInput)
+        private async ValueTask<InternalResult<IEnumerable<T>>> Rest(Parser<TToken, T> parser, ParseState<TToken> state, ExpectedCollector<TToken> expecteds, List<T> ts, bool consumedInput)
         {
-            state.BeginExpectedTran();
-            var result = await parser.Parse(state);
+            var childExpecteds = new ExpectedCollector<TToken>();
+            var result = await parser.Parse(state, childExpecteds);
             while (result.Success)
             {
-                state.EndExpectedTran(false);
+                childExpecteds.Clear();
                 if (!result.ConsumedInput)
                 {
+                    childExpecteds.Dispose();
                     throw new InvalidOperationException("Many() used with a parser which consumed no input");
                 }
                 consumedInput = true;
                 ts.Add(result.Value);
-                state.BeginExpectedTran();
-                result = await parser.Parse(state);
+                result = await parser.Parse(state, childExpecteds);
             }
-            state.EndExpectedTran(result.ConsumedInput);
+            expecteds.AddIf(ref childExpecteds, result.ConsumedInput);
+            childExpecteds.Dispose();
             if (result.ConsumedInput)  // the most recent parser failed after consuming input
             {
                 // state.Error set by parser
@@ -164,9 +165,9 @@ namespace Pidgin
             _separator = separator;
         }
 
-        internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state)
+        internal override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
-            var result = await _parser.Parse(state);
+            var result = await _parser.Parse(state, expecteds);
             if (!result.Success)
             {
                 // state.Error set by _parser
@@ -175,14 +176,18 @@ namespace Pidgin
             var ts = new List<T> { result.Value };
             var consumedInput = result.ConsumedInput;
 
+            var childExpecteds = new ExpectedCollector<TToken>();
             while (true)
             {
-                state.BeginExpectedTran();
-                var sepResult = await _separator.Parse(state);
-                state.EndExpectedTran(!sepResult.Success && sepResult.ConsumedInput);
+                var sepResult = await _separator.Parse(state, childExpecteds);
+                expecteds.AddIf(ref childExpecteds, !sepResult.Success && sepResult.ConsumedInput);
+                childExpecteds.Clear();
+
                 consumedInput = consumedInput || sepResult.ConsumedInput;
+
                 if (!sepResult.Success)
                 {
+                    childExpecteds.Dispose();
                     if (sepResult.ConsumedInput)
                     {
                         // state.Error set by _separator
@@ -191,12 +196,14 @@ namespace Pidgin
                     return InternalResult.Success<IEnumerable<T>>(ts, consumedInput);
                 }
 
-                state.BeginExpectedTran();
-                var itemResult = await _parser.Parse(state);
-                state.EndExpectedTran(!itemResult.Success && itemResult.ConsumedInput);
+                var itemResult = await _parser.Parse(state, childExpecteds);
+                expecteds.AddIf(ref childExpecteds, !itemResult.Success && itemResult.ConsumedInput);
+                childExpecteds.Clear();
+
                 consumedInput = consumedInput || itemResult.ConsumedInput;
                 if (!itemResult.Success)
                 {
+                    childExpecteds.Dispose();
                     if (itemResult.ConsumedInput)
                     {
                         // state.Error set by _parser

@@ -84,7 +84,7 @@ namespace Pidgin
             _parsers = parsers;
         }
 
-        internal sealed override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<IEnumerable<T>>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             var consumedInput = false;
             var ts = new T[_parsers.Length];
@@ -92,8 +92,8 @@ namespace Pidgin
             for (var i = 0; i < _parsers.Length; i++)
             {
                 var p = _parsers[i];
-
-                var result = await p.Parse(state);
+            
+                var result = await p.Parse(state, expecteds);
                 consumedInput = consumedInput || result.ConsumedInput;
 
                 if (!result.Success)
@@ -153,7 +153,7 @@ namespace Pidgin
             _valueTokens = value.ToImmutableArray();
         }
 
-        internal sealed override async ValueTask<InternalResult<TEnumerable>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<TEnumerable>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             var memory = await state.LookAhead(_valueTokens.Length);  // span.Length <= _valueTokens.Length
 
@@ -169,7 +169,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(new Expected<TToken>(_valueTokens));
+                expecteds.Add(new Expected<TToken>(_valueTokens));
                 return InternalResult.Failure<TEnumerable>(errorPos > 0);
             }
 
@@ -183,7 +183,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(new Expected<TToken>(_valueTokens));
+                expecteds.Add(new Expected<TToken>(_valueTokens));
                 return InternalResult.Failure<TEnumerable>(memory.Length > 0);
             }
 
@@ -220,7 +220,7 @@ namespace Pidgin
             _valueTokens = value.ToImmutableArray();
         }
 
-        internal sealed override async ValueTask<InternalResult<TEnumerable>> Parse(ParseState<TToken> state)
+        internal sealed override async ValueTask<InternalResult<TEnumerable>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
         {
             var memory = await state.LookAhead(_valueTokens.Length);  // span.Length <= _valueTokens.Length
 
@@ -236,7 +236,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(new Expected<TToken>(_valueTokens));
+                expecteds.Add(new Expected<TToken>(_valueTokens));
                 return InternalResult.Failure<TEnumerable>(errorPos > 0);
             }
 
@@ -250,7 +250,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(new Expected<TToken>(_valueTokens));
+                expecteds.Add(new Expected<TToken>(_valueTokens));
                 return InternalResult.Failure<TEnumerable>(memory.Length > 0);
             }
 

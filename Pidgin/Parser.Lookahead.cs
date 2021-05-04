@@ -31,11 +31,11 @@ namespace Pidgin
             _parser = parser;
         }
 
-            internal override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
-            {
-                state.PushBookmark();
+        internal override async ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
+        {
+            state.PushBookmark();
 
-                var result = await _parser.Parse(state);
+            var result = await _parser.Parse(state, expecteds);
 
             if (result.Success)
             {

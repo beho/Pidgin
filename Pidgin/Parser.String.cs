@@ -59,7 +59,7 @@ namespace Pidgin
             _value = value;
         }
 
-        internal sealed override async ValueTask<InternalResult<string>> Parse(ParseState<char> state)
+        internal sealed override async ValueTask<InternalResult<string>> Parse(ParseState<char> state, ExpectedCollector<char> expecteds)
         {
             var memory = await state.LookAhead(_value.Length);  // span.Length <= _valueTokens.Length
 
@@ -75,7 +75,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(Expected);
+                expecteds.Add(Expected);
                 return InternalResult.Failure<string>(errorPos > 0);
             }
 
@@ -89,7 +89,7 @@ namespace Pidgin
                     state.Location,
                     null
                 );
-                state.AddExpected(Expected);
+                expecteds.Add(Expected);
                 return InternalResult.Failure<string>(memory.Length > 0);
             }
 

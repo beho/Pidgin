@@ -23,7 +23,7 @@ namespace Pidgin
             _value = value;
         }
 
-        internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state)
+        internal sealed override ValueTask<InternalResult<T>> Parse(ParseState<TToken> state, ExpectedCollector<TToken> expecteds)
             => new ValueTask<InternalResult<T>>(InternalResult.Success<T>(_value, false));
     }
 }
